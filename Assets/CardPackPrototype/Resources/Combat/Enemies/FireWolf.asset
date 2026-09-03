@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de447bb1e154eab9000739e8d4f1221, type: 3}
+  m_Name: FireWolf
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyDefinition
+  EnemyName: "\uD654\uC774\uB9AC"
+  EnglishName: FireWolf
+  Image: {fileID: 2800000, guid: 1d9945bdd1d377d4eb21c9e397dc7795, type: 3}
+  FallbackColor: {r: 0.6933962, g: 0.07849766, b: 0.07849766, a: 1}
+  MaximumHealth: 70
+  StartingBuffs: []
+  ActionName: "\uACF5\uACA9"
+  EnglishActionName: Attack
+  ActionInterval: 2
+  Abilities:
+  - Target: 2
+    Effect: 0
+    Amount: 15
+    RelatedBuff: {fileID: 0}
+  - Target: 2
+    Effect: 1
+    Amount: 10
+    RelatedBuff: {fileID: 11400000, guid: 532da11db305406b851f88a2f7048590, type: 2}
+  AttackDamage: 15
+  BleedingStacks: 2

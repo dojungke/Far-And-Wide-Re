@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c8d9e0f1a2b3c4d5e6f708192a3b4c5, type: 3}
+  m_Name: StarterDeck
+  m_EditorClassIdentifier: Assembly-CSharp::CombatDeckDefinition
+  Cards:
+  - Type: {fileID: 11400000, guid: 30000000000000000000000000000001, type: 2}
+    Color: 1
+    Number: 2
+  - Type: {fileID: 11400000, guid: 30000000000000000000000000000001, type: 2}
+    Color: 1
+    Number: 3
+  - Type: {fileID: 11400000, guid: 30000000000000000000000000000001, type: 2}
+    Color: 1
+    Number: 4
+  - Type: {fileID: 11400000, guid: 30000000000000000000000000000001, type: 2}
+    Color: 0
+    Number: 1
+  - Type: {fileID: 11400000, guid: 30000000000000000000000000000001, type: 2}
+    Color: 0
+    Number: 2
+  - Type: {fileID: 11400000, guid: 30000000000000000000000000000001, type: 2}
+    Color: 0
+    Number: 5
+  - Type: {fileID: 11400000, guid: 30000000000000000000000000000001, type: 2}
+    Color: 2
+    Number: 4
+  - Type: {fileID: 11400000, guid: 30000000000000000000000000000001, type: 2}
+    Color: 2
+    Number: 5
+  - Type: {fileID: 11400000, guid: 30000000000000000000000000000001, type: 2}
+    Color: 2
+    Number: 6
+  - Type: {fileID: 11400000, guid: 30000000000000000000000000000002, type: 2}
+    Color: 1
+    Number: 1
+  - Type: {fileID: 11400000, guid: 30000000000000000000000000000003, type: 2}
+    Color: 0
+    Number: 6
+  - Type: {fileID: 11400000, guid: 30000000000000000000000000000004, type: 2}
+    Color: 2
+    Number: 3

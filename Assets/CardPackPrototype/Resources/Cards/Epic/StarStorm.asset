@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ceccc00981a4a44bb12cdaa8339d16c, type: 3}
+  m_Name: StarStorm
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  Name: "\uC720\uC131\uC6B0"
+  Description: "\uCE74\uB4DC \uC22B\uC790\uB9CC\uD07C \uC2A4\uD0DD \uD68D\uB4DD\n\uC2A4\uD0DD\uC774
+    16 \uC774\uC0C1\uC774\uBA74 16\uAC1C\uB97C \uC18C\uBAA8\uD574 \uCE74\uB4DC\uD329
+    \uB9E8 \uB4A4\uC5D0 \uC720\uC131 1\uC7A5 \uC0DD\uC131\n\uD329\uB2F9 \uCD5C\uB300
+    7\uD68C \uBC1C\uB3D9"
+  EnglishName: Meteor Shower
+  EnglishDescription: 'Gain stacks equal to the card number.
+
+    At 16 or more stacks,
+    spend 16 to add 1 Meteor to the end of the pack.
+
+    Triggers up to 7 times
+    per pack.'
+  Rare: 3
+  Image: {fileID: 2800000, guid: 50ed23c10841b164ca5a20ddf7015817, type: 3}
+  FitBackgroundImageToWidth: 1
+  Tags: 0200000008000000
+  CanEquipMagic: 0
+  CanEquipWeapon: 0
+  MaxMergeCount: 1
+  UnlimitedMergeCount: 0
+  ScorePopupAggregation: 0
+  IgnoreExternalStackGrants: 0
+  MiningChanceByLevel:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  MiningChanceChangePerLevelAboveTen: 0
+  FusionRecipeId: 
+  FusionRequiredCopies: 1
+  FusionResult: {fileID: 0}
+  UseAsFusionAppearanceSource: 0
+  ClearInheritedRelicsOnLoad: 0
+  ShortStatusName: 
+  EnglishShortStatusName: 
+  DeckAbilities:
+  - Trigger: 6
+    Effect: 15
+    Score: 0
+    PercentBonus: 0
+    MaximumPercent: 0
+    NumberMultiplier: 1
+    PackCardCount: 0
+    ChancePercent: 0
+    ApplicableNumbers: 
+    ApplicableColors: 
+    ResetAccumulationAfterPack: 0
+    StackThreshold: 16
+    DurationDrawCount: 0
+    GeneratedCard: {fileID: 11400000, guid: 10f7747ebb5324b4baa5ce3032ada953, type: 2}
+    TransformedCard: {fileID: 0}
+    PacksToTransform: 1
+    GeneratedCardTag: 0
+    MaxTriggersPerPack: 7
+    ExcludeFromNatureChain: 0

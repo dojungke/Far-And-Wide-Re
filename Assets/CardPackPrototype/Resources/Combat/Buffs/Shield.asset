@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0fd871321fb24d4697246da5ecc34bab, type: 3}
+  m_Name: Shield
+  m_EditorClassIdentifier: Assembly-CSharp::CombatBuffDefinition
+  BuffName: "\uBCF4\uD638\uB9C9"
+  Description: "\uBCF4\uC720\uD55C \uC218\uCE58\uB9CC\uD07C \uD53C\uD574\uB97C \uBA3C\uC800
+    \uD761\uC218\uD569\uB2C8\uB2E4."
+  EnglishName: Shield
+  EnglishDescription: Absorbs damage equal to its current value before health is
+    reduced.
+  Image: {fileID: 2800000, guid: fcd2197d0f06bad49a7dba6829700943, type: 3}

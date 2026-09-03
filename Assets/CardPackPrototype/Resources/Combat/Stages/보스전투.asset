@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2f4017d9dcf4a84ac8104f43f2a1b11, type: 3}
+  m_Name: 보스전투
+  m_EditorClassIdentifier: Assembly-CSharp::StageCardType
+  StageName: 보스 전투
+  Description: 보스 적 조합과 전투합니다.
+  EnglishName: Boss Battle
+  EnglishDescription: Fight a boss enemy group.
+  Image: {fileID: 2800000, guid: 1f13b65a1f89b54458e628e6f349cd4a, type: 3}
+  Color: 2
+  Number: 6
+  Kind: 2
+  Encounters: {fileID: 11400000, guid: b186a283d1b649508c637df57a0c0fe3, type: 2}

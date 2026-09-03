@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2f4017d9dcf4a84ac8104f43f2a1b11, type: 3}
+  m_Name: 검은휴식4
+  m_EditorClassIdentifier: Assembly-CSharp::StageCardType
+  StageName: 휴식
+  Description: 잃은 체력의 30% + 10만큼 회복합니다.
+  EnglishName: Rest
+  EnglishDescription: Restore 30% of missing health + 10.
+  Image: {fileID: 0}
+  Color: 3
+  Number: 4
+  Kind: 3
+  Encounters: {fileID: 0}
