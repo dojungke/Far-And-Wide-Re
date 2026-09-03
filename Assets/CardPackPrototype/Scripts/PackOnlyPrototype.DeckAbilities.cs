@@ -1632,7 +1632,7 @@ namespace CardOpen.Prototype
                 StoredCard card = currentPackCards[i];
                 if (visual == null || card == null || card.Data == null) continue;
                 visual.SetDisplayName(GetStoredCardDisplayName(card));
-                visual.SetDisplayDescription(card.Data, GetStoredCardDisplayDescription(card), IsEnglishUi,
+                visual.SetDisplayDescription(card.Data, GetHandCardDisplayDescription(card), IsEnglishUi,
                     GetMineralMiningOddsLine(card.Data));
             }
             RefreshDeckCardDisplayNames();

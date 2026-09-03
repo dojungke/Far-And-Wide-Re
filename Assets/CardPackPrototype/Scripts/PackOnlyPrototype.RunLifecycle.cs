@@ -16,6 +16,7 @@ namespace CardOpen.Prototype
     {
         private void Awake()
         {
+            QualitySettings.shadows = ShadowQuality.Disable;
             LoadUserSettings();
             SetupScene();
             StartNewRun();
@@ -395,9 +396,18 @@ namespace CardOpen.Prototype
                     if (cards[i] != null && cards[i].gameObject.activeSelf)
                         cards[i].transform.localScale = Vector3.one * CurrentRevealedCardScale;
             }
-            UpdateHandCardHover();
-            UpdateStageHandHover();
-            UpdateDiscardPileHover();
+            bool blockCardHover = settingsOpen || abandonConfirmationVisible || phase == RevealPhase.GameOver || phase == RevealPhase.RunCleared;
+            if (blockCardHover)
+            {
+                ResetHandHoverVisuals();
+                discardPileHovered = false;
+            }
+            else
+            {
+                UpdateHandCardHover();
+                UpdateStageHandHover();
+                UpdateDiscardPileHover();
+            }
             RefreshRuntimeUiOnStateChange();
             if (scorePopups.Count > 0 || canvasScorePopupsActive) UpdateCanvasScorePopups(); // Time-based animation only.
         }

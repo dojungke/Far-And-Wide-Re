@@ -29,10 +29,8 @@ namespace CardOpen.Prototype
             runtimeUiCanvas = canvasObject.GetComponent<Canvas>();
             ConfigureRuntimeUiCanvasRenderLayer();
             CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+            scaler.scaleFactor = 1f;
             GameObject rootObject = new GameObject("Reference UI Root", typeof(RectTransform));
             rootObject.transform.SetParent(canvasObject.transform, false);
             runtimeUiRoot = rootObject.GetComponent<RectTransform>();
@@ -56,12 +54,13 @@ namespace CardOpen.Prototype
         private void UpdateRuntimeUiRootLayout()
         {
             if (runtimeUiRoot == null) return;
-            GetUiLayout(out _, out _, out _);
+            GetUiLayout(out float scale, out _, out _);
             Rect safeArea = Screen.safeArea;
             if (safeArea.width <= 0f || safeArea.height <= 0f)
                 safeArea = new Rect(0f, 0f, Screen.width, Screen.height);
             runtimeUiRoot.sizeDelta = new Vector2(UiReferenceWidth, UiReferenceHeight);
-            runtimeUiRoot.localScale = Vector3.one;
+            float rootScale = scale;
+            runtimeUiRoot.localScale = new Vector3(rootScale, rootScale, 1f);
             runtimeUiRoot.anchoredPosition = Vector2.zero;
         }
         private void PrewarmRuntimeUiFont(TMP_FontAsset fontAsset)
@@ -113,7 +112,7 @@ namespace CardOpen.Prototype
             value.color = Color.white;
             value.outlineColor = Color.black;
             value.outlineWidth = 0.35f;
-            value.extraPadding = true;
+            value.extraPadding = false;
             value.UpdateMeshPadding();
         }
         private void ApplyOutlinedValueFont(TextMeshProUGUI value)
@@ -405,7 +404,7 @@ namespace CardOpen.Prototype
             amount.color = Color.white;
             amount.outlineColor = Color.black;
             amount.outlineWidth = CombatTextOutline.OutlineThickness;
-            amount.extraPadding = true;
+            amount.extraPadding = false;
             if (name != "Action Countdown")
             {
                 amount.alignment = TextAlignmentOptions.BottomRight;
@@ -596,7 +595,7 @@ namespace CardOpen.Prototype
             amount.color = Color.white;
             amount.outlineColor = Color.black;
             amount.outlineWidth = CombatTextOutline.OutlineThickness;
-            amount.extraPadding = true;
+            amount.extraPadding = false;
             ApplyOutlinedValueFont(amount);
             return new CanvasIconSlot { Root = root, Icon = icon, Amount = amount };
         }
@@ -830,6 +829,7 @@ namespace CardOpen.Prototype
             overlay.offsetMin = Vector2.zero;
             overlay.offsetMax = Vector2.zero;
             canvasSettingsRoot.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.68f);
+            canvasSettingsRoot.GetComponent<Image>().raycastTarget = false;
             GameObject panel = new GameObject("Panel", typeof(RectTransform), typeof(Image));
             panel.transform.SetParent(overlay, false);
             RectTransform panelRect = panel.GetComponent<RectTransform>();
@@ -837,7 +837,9 @@ namespace CardOpen.Prototype
             panelRect.anchorMax = new Vector2(0.5f, 0.5f);
             panelRect.pivot = new Vector2(0.5f, 0.5f);
             panelRect.sizeDelta = new Vector2(500f, 535f);
-            panel.GetComponent<Image>().color = new Color(0.08f, 0.10f, 0.16f, 0.98f);
+            panel.GetComponent<Image>().color = Color.white;
+            Outline panelOutline = panel.AddComponent<Outline>();
+            panelOutline.effectColor = Color.black; panelOutline.effectDistance = new Vector2(3f, -3f);
             canvasSettingsTitle = CreateSettingsText("Title", panel.transform, new Vector2(0f, -34f),
                 new Vector2(420f, 58f), 38f, TextAlignmentOptions.Center);
             canvasSettingsLanguageLabel = CreateSettingsText("Language", panel.transform, new Vector2(-150f, -128f),
@@ -847,6 +849,8 @@ namespace CardOpen.Prototype
             Button english = CreateSettingsButton("English", panel.transform, new Vector2(105f, -180f),
                 new Vector2(170f, 52f), () => SetUiLanguage(1), out TextMeshProUGUI englishLabel);
             koreanLabel.name = "Korean Label";
+            koreanLabel.text = Ui("한국어", "Korean");
+            englishLabel.text = Ui("영어", "English");
             englishLabel.name = "English Label";
             canvasSettingsVolumeLabel = CreateSettingsText("Volume", panel.transform, new Vector2(-110f, -262f),
                 new Vector2(280f, 42f), 23f, TextAlignmentOptions.Left);
@@ -859,8 +863,22 @@ namespace CardOpen.Prototype
             sliderRect.anchoredPosition = new Vector2(0f, -320f);
             sliderRect.sizeDelta = new Vector2(370f, 28f);
             Image sliderBackground = sliderObject.AddComponent<Image>();
-            sliderBackground.color = new Color(0.2f, 0.24f, 0.34f, 1f);
+            sliderBackground.color = Color.white;
+            Outline sliderOutline = sliderObject.AddComponent<Outline>();
+            sliderOutline.effectColor = Color.black;
+            sliderOutline.effectDistance = new Vector2(2f, -2f);
             canvasSettingsVolumeSlider = sliderObject.GetComponent<Slider>();
+            canvasSettingsVolumeSlider.targetGraphic = sliderBackground;
+            canvasSettingsVolumeSlider.direction = Slider.Direction.LeftToRight;
+            GameObject sliderHandle = new GameObject("Handle", typeof(RectTransform), typeof(Image));
+            sliderHandle.transform.SetParent(sliderObject.transform, false);
+            RectTransform handleRect = sliderHandle.GetComponent<RectTransform>();
+            handleRect.anchorMin = new Vector2(0f, 0.5f);
+            handleRect.anchorMax = new Vector2(0f, 0.5f);
+            handleRect.pivot = new Vector2(0.5f, 0.5f);
+            handleRect.sizeDelta = new Vector2(28f, 40f);
+            sliderHandle.GetComponent<Image>().color = Color.black;
+            canvasSettingsVolumeSlider.handleRect = handleRect;
             canvasSettingsVolumeSlider.minValue = 0f;
             canvasSettingsVolumeSlider.maxValue = 1f;
             canvasSettingsVolumeSlider.onValueChanged.AddListener(SetMasterVolume);
@@ -877,7 +895,9 @@ namespace CardOpen.Prototype
             confirmRect.anchorMax = new Vector2(0.5f, 0.5f);
             confirmRect.pivot = new Vector2(0.5f, 0.5f);
             confirmRect.sizeDelta = new Vector2(500f, 280f);
-            canvasAbandonConfirmationRoot.GetComponent<Image>().color = new Color(0.12f, 0.08f, 0.10f, 1f);
+            canvasAbandonConfirmationRoot.GetComponent<Image>().color = Color.white;
+            Outline confirmOutline = canvasAbandonConfirmationRoot.AddComponent<Outline>();
+            confirmOutline.effectColor = Color.black; confirmOutline.effectDistance = new Vector2(3f, -3f);
             TextMeshProUGUI confirmText = CreateSettingsText("Message", canvasAbandonConfirmationRoot.transform,
                 new Vector2(0f, -36f), new Vector2(420f, 100f), 22f, TextAlignmentOptions.Center);
             confirmText.text = Ui("도전을 포기할까요?\n현재 결과 화면으로 이동합니다.",
@@ -896,6 +916,12 @@ namespace CardOpen.Prototype
             bool canAbandonChallenge = phase != RevealPhase.GameOver && phase != RevealPhase.RunCleared;
             canvasSettingsButton.gameObject.SetActive(!settingsOpen && !combatDeckInspectionVisible && !stageDeckInspectionVisible);
             canvasSettingsRoot.SetActive(settingsOpen);
+            if (settingsOpen)
+            {
+                canvasSettingsRoot.transform.SetAsLastSibling();
+                TextMeshProUGUI[] settingsTexts = canvasSettingsRoot.GetComponentsInChildren<TextMeshProUGUI>(true);
+                for (int i = 0; i < settingsTexts.Length; i++) settingsTexts[i].color = Color.black;
+            }
             if (!settingsOpen) return;
             canvasSettingsTitle.text = Ui("설정", "Settings");
             canvasSettingsLanguageLabel.text = Ui("언어", "Language");
@@ -917,6 +943,7 @@ namespace CardOpen.Prototype
             overlay.offsetMin = Vector2.zero;
             overlay.offsetMax = Vector2.zero;
             canvasRunEndRoot.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.7f);
+            canvasRunEndRoot.GetComponent<Image>().raycastTarget = false;
             GameObject panel = new GameObject("Panel", typeof(RectTransform), typeof(Image));
             panel.transform.SetParent(overlay, false);
             RectTransform panelRect = panel.GetComponent<RectTransform>();
@@ -924,7 +951,9 @@ namespace CardOpen.Prototype
             panelRect.anchorMax = new Vector2(0.5f, 0.5f);
             panelRect.pivot = new Vector2(0.5f, 0.5f);
             panelRect.sizeDelta = new Vector2(740f, 485f);
-            panel.GetComponent<Image>().color = new Color(0.08f, 0.10f, 0.16f, 0.98f);
+            panel.GetComponent<Image>().color = Color.white;
+            Outline panelOutline = panel.AddComponent<Outline>();
+            panelOutline.effectColor = Color.black; panelOutline.effectDistance = new Vector2(3f, -3f);
             canvasRunEndTitle = CreateSettingsText("Title", panel.transform, new Vector2(0f, -42f),
                 new Vector2(640f, 70f), 44f, TextAlignmentOptions.Center);
             canvasRunEndBody = CreateSettingsText("Body", panel.transform, new Vector2(0f, -124f),
@@ -945,6 +974,12 @@ namespace CardOpen.Prototype
             EnsureCanvasRunEndUi();
             bool visible = phase == RevealPhase.GameOver || phase == RevealPhase.RunCleared;
             canvasRunEndRoot.SetActive(visible);
+            if (visible)
+            {
+                canvasRunEndRoot.transform.SetAsLastSibling();
+                TextMeshProUGUI[] resultTexts = canvasRunEndRoot.GetComponentsInChildren<TextMeshProUGUI>(true);
+                for (int i = 0; i < resultTexts.Length; i++) resultTexts[i].color = Color.black;
+            }
             if (!visible) return;
             bool cleared = phase == RevealPhase.RunCleared;
             int goalIndex = Mathf.Clamp(currentGoalIndex, 0, GoalScores.Length - 1);
@@ -1263,7 +1298,7 @@ namespace CardOpen.Prototype
             if (playerDamageFlashImage != null) return;
             EnsureRuntimeUiCanvas();
             GameObject imageObject = new GameObject("Player Damage Flash", typeof(RectTransform), typeof(Image));
-            imageObject.transform.SetParent(runtimeUiRoot, false);
+            imageObject.transform.SetParent(runtimeUiCanvas != null ? runtimeUiCanvas.transform : runtimeUiRoot, false);
             RectTransform rect = imageObject.GetComponent<RectTransform>();
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
@@ -1279,7 +1314,7 @@ namespace CardOpen.Prototype
             if (combatEntryFadeImage != null) return;
             EnsureRuntimeUiCanvas();
             GameObject imageObject = new GameObject("Combat Entry Fade", typeof(RectTransform), typeof(Image));
-            imageObject.transform.SetParent(runtimeUiRoot, false);
+            imageObject.transform.SetParent(runtimeUiCanvas != null ? runtimeUiCanvas.transform : runtimeUiRoot, false);
             RectTransform rect = imageObject.GetComponent<RectTransform>();
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;

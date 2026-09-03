@@ -22,6 +22,10 @@ namespace CardOpen.Prototype
         }
         private void OnGUI()
         {
+            EventType eventType = Event.current.type;
+            if (eventType != EventType.Repaint && eventType != EventType.MouseDown
+                && eventType != EventType.MouseDrag && eventType != EventType.MouseUp
+                && eventType != EventType.Used) return;
             try
             {
                 GetUiLayout(out float scale, out float offsetX, out float offsetY);

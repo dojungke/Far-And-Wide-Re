@@ -61,7 +61,7 @@ namespace CardOpen.Prototype
                 healthText.fontStyle = FontStyles.Bold;
                 healthText.outlineWidth = 0.18f;
                 healthText.outlineColor = Color.black;
-                healthText.extraPadding = true;
+                healthText.extraPadding = false;
                 healthText.GetComponent<MeshRenderer>().sortingOrder = StatusOrder + 10;
             }
             TMP_FontAsset fontAsset = GetFont(font);

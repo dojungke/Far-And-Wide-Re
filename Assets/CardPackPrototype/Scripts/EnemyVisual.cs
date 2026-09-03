@@ -150,7 +150,7 @@ namespace CardOpen.Prototype
                 text.fontStyle = FontStyles.Bold;
                 text.outlineWidth = 0.18f;
                 text.outlineColor = Color.black;
-                text.extraPadding = true;
+                text.extraPadding = false;
                 text.GetComponent<MeshRenderer>().sortingOrder = StatusOrder + 10;
             }
             TMP_FontAsset fontAsset = GetStatusFont(font);

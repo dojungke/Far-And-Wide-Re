@@ -66,7 +66,6 @@ namespace CardOpen.Prototype
 
         private void SetupWorld()
         {
-            Application.targetFrameRate = 60;
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
             Camera camera = Camera.main;
@@ -94,13 +93,8 @@ namespace CardOpen.Prototype
                 key.shadows = LightShadows.None;
             }
 
-            GameObject fillObject = new GameObject("Fill Light");
-            Light fill = fillObject.AddComponent<Light>();
-            fill.type = LightType.Directional;
-            fill.transform.rotation = Quaternion.Euler(28f, 145f, 0f);
-            fill.color = new Color(0.34f, 0.53f, 1f);
-            fill.intensity = 0.75f;
-            fill.shadows = LightShadows.None;
+
+
 
             GameObject table = GameObject.CreatePrimitive(PrimitiveType.Cube);
             table.name = "Low Poly Table";

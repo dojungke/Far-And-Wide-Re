@@ -8,6 +8,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.Rendering.Universal;
 using TMPro;
 using Random = UnityEngine.Random;
 namespace CardOpen.Prototype
@@ -16,7 +17,6 @@ namespace CardOpen.Prototype
     {
         private void SetupScene()
         {
-            Application.targetFrameRate = 60;
             font = Resources.Load<Font>("Fonts/CardFont");
             if (font == null)
                 font = Font.CreateDynamicFontFromOSFont(new[] { "Malgun Gothic", "Arial Unicode MS", "Arial" }, 64);
@@ -40,23 +40,13 @@ namespace CardOpen.Prototype
             camera.backgroundColor = new Color(0.018f, 0.022f, 0.038f);
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.allowHDR = false;
-            CreateBackground(camera);
-            Light key = FindAnyObjectByType<Light>();
-            if (key != null)
+            UniversalAdditionalCameraData cameraData = camera.GetComponent<UniversalAdditionalCameraData>();
+            if (cameraData != null)
             {
-                key.type = LightType.Directional;
-                key.transform.rotation = Quaternion.Euler(45f, -30f, 0f);
-                key.color = new Color(1f, 0.86f, 0.72f);
-                key.intensity = 1.25f;
-                key.shadows = LightShadows.None;
+                cameraData.renderPostProcessing = false;
+                cameraData.antialiasing = AntialiasingMode.None;
             }
-            GameObject fillObject = new GameObject("Fill Light");
-            Light fill = fillObject.AddComponent<Light>();
-            fill.type = LightType.Directional;
-            fill.transform.rotation = Quaternion.Euler(20f, 150f, 0f);
-            fill.color = new Color(0.34f, 0.50f, 1f);
-            fill.intensity = 0.7f;
-            fill.shadows = LightShadows.None;
+            CreateBackground(camera);
             GameObject stackObject = new GameObject("Card Stack");
             cardStack = stackObject.transform;
             stackObject.AddComponent<CardStackVisual>();
@@ -483,6 +473,9 @@ namespace CardOpen.Prototype
         }
         private void StartNewRun()
         {
+            settingsOpen = false;
+            abandonConfirmationVisible = false;
+            if (canvasRunEndRoot != null) canvasRunEndRoot.SetActive(false);
             sharedPackPreviewActive = false;
             sharedResultSnapshotJson = null;
             sharedResultMode = false;
@@ -514,7 +507,13 @@ namespace CardOpen.Prototype
             lastUsedStageCard = null;
             currentPackOpenedForGoal = false;
             previousRevealedCard = null;
-            lastUsedCard = null;
+            if (starterDrawPile.Count > 0 && starterDrawPile.Peek() != null)
+            {
+                global::CombatCard seedCard = starterDrawPile.Peek();
+                lastUsedCard = new StoredCard { Color = seedCard.Color, Number = seedCard.Number };
+            }
+            else if (lastUsedCard == null)
+                lastUsedCard = new StoredCard { Color = global::CardColor.Green, Number = 1 };
             hasPlayedCardThisTurn = false;
             usedCastCount = 0;
             LoadStarterRelics();
@@ -658,7 +657,7 @@ namespace CardOpen.Prototype
             {
                 EnemyVisual visual = enemyVisuals[i];
                 if (visual == null) continue;
-                bool visible = i < visibleCount && enemies[i] != null && !stageSelectionVisible;
+                bool visible = i < visibleCount && enemies[i] != null && !enemies[i].IsDefeated && !stageSelectionVisible;
                 visual.gameObject.SetActive(visible);
                 if (!visible) continue;
                 global::EnemyDefinition definition = enemies[i].Definition;
@@ -764,7 +763,7 @@ namespace CardOpen.Prototype
 
         private IEnumerator FinishCombatAfterDefeatDelay()
         {
-            yield return new WaitForSecondsRealtime(1f);
+            yield return new WaitForSecondsRealtime(0.25f);
             combatVictoryRoutine = null;
             if (enemies.Count == 0 || !enemies.TrueForAll(enemy => enemy == null || enemy.IsDefeated)) yield break;
             ClearPlayerCombatBuffs();

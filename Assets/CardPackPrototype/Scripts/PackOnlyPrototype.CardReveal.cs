@@ -190,7 +190,7 @@ namespace CardOpen.Prototype
             currentPackCards.Add(stored);
             visual.SetDisplayName(IsEnglishUi && !string.IsNullOrEmpty(definition.EnglishName)
                 ? definition.EnglishName : GetStoredCardDisplayName(stored));
-            visual.SetDisplayDescription(data, definition.GetLocalizedDescription(IsEnglishUi), IsEnglishUi, string.Empty);
+            visual.SetDisplayDescription(data, GetHandCardDisplayDescription(stored), IsEnglishUi, string.Empty);
             visual.PrepareFaceUp(CardHome, 1.08f, 0f);
             visual.gameObject.SetActive(false);
             cards.Add(visual);

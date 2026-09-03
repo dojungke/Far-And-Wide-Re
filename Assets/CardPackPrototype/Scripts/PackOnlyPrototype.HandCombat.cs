@@ -97,13 +97,38 @@ namespace CardOpen.Prototype
             for (int i = 0; i < ownedRelics.Count; i++)
             {
                 global::CombatRelicDefinition relic = ownedRelics[i];
-                if (relic != null && relic.Effect == global::CombatRelicEffect.GreenCardFlatDamage
-                    && card != null && card.Color == global::CardColor.Green)
-                    damage += relic.Amount;
+                if (relic == null || card == null) continue;
+                bool matchesColor = (relic.Effect == global::CombatRelicEffect.GreenCardFlatDamage && card.Color == global::CardColor.Green)
+                    || (relic.Effect == global::CombatRelicEffect.RedCardFlatDamage && card.Color == global::CardColor.Red)
+                    || (relic.Effect == global::CombatRelicEffect.BlueCardFlatDamage && card.Color == global::CardColor.Blue)
+                    || (relic.Effect == global::CombatRelicEffect.BlackWhiteCardFlatDamage && (card.Color == global::CardColor.Black || card.Color == global::CardColor.White));
+                if (matchesColor) damage += relic.Amount;
             }
             return relicDamagePercentThisTurn > 0
                 ? Mathf.RoundToInt(damage * (100f + relicDamagePercentThisTurn) / 100f)
                 : damage;
+        }
+        private string GetHandCardDisplayDescription(StoredCard card)
+        {
+            if (card == null || card.CombatType == null) return GetStoredCardDisplayDescription(card);
+            string description = GetStoredCardDisplayDescription(card);
+            if (rewardChoiceActive || shopChoiceActive || eventChoiceActive || shopRewardOpeningActive) return description;
+            if (card.CombatType.Abilities == null) return description;
+            for (int i = 0; i < card.CombatType.Abilities.Count; i++)
+            {
+                CombatCardAbility ability = card.CombatType.Abilities[i];
+                if (ability == null || (ability.Effect != global::CombatAbilityEffect.Damage && ability.Effect != global::CombatAbilityEffect.IgnoreShieldDamage)) continue;
+                int modified = GetRelicModifiedDamage(card, ability.Amount);
+                if (modified == ability.Amount) continue;
+                string originalAmount = ability.Amount.ToString();
+                string damageMarker = IsEnglishUi ? "damage" : "피해";
+                int markerIndex = description.IndexOf(damageMarker, StringComparison.OrdinalIgnoreCase);
+                int amountIndex = markerIndex >= 0
+                    ? description.IndexOf(originalAmount, markerIndex + damageMarker.Length, StringComparison.Ordinal)
+                    : -1;
+                if (amountIndex >= 0) description = description.Substring(0, amountIndex) + modified + description.Substring(amountIndex + originalAmount.Length);
+            }
+            return description;
         }
         private void AddEffectPopupLine(List<string> lines, global::CombatBuffDefinition definition, int count)
         {
@@ -169,6 +194,7 @@ namespace CardOpen.Prototype
                         highlightedHandCard = null;
                     }
                     draggedHandIndex = pressedIndex;
+                    draggedHandRaisedEnough = false;
                     draggedHandStartPosition = pressedCard.transform.position;
                     pressedCard.transform.localScale = Vector3.one * 1.18f;
                     pressedCard.SetSortingOrder(1000);
@@ -177,6 +203,7 @@ namespace CardOpen.Prototype
             if (inputEvent.type == EventType.MouseDrag && draggedHandIndex >= 0
                 && draggedHandIndex < cards.Count && cards[draggedHandIndex] != null)
             {
+                if (screenPoint.y <= pressedHandScreenPosition.y - 140f) draggedHandRaisedEnough = true;
                 Vector3 screenPosition = camera.WorldToScreenPoint(draggedHandStartPosition);
                 Vector3 targetPosition = camera.ScreenToWorldPoint(new Vector3(
                     screenPoint.x, Screen.height - screenPoint.y, screenPosition.z));
@@ -208,20 +235,20 @@ namespace CardOpen.Prototype
                 int targetEnemyIndex;
                 if (restStageActive)
                 {
-                    bool accepted = !IsPointOverUsedCardPile(screenPoint) && IsCardRaisedForCast(draggedHandIndex);
+                    bool accepted = !IsPointOverUsedCardPile(screenPoint) && IsCardRaisedForCast(draggedHandIndex) && draggedHandRaisedEnough;
                     if (accepted) UseRestCard(draggedHandIndex); else RestoreStartingHandCard(draggedHandIndex);
-                    draggedHandIndex = -1; inputEvent.Use(); return;
+                    draggedHandIndex = -1; draggedHandRaisedEnough = false; inputEvent.Use(); return;
                 }
                 if (shopRewardOpeningActive)
                 {
-                    bool accepted = !IsPointOverUsedCardPile(screenPoint) && IsCardRaisedForCast(draggedHandIndex);
+                    bool accepted = !IsPointOverUsedCardPile(screenPoint) && IsCardRaisedForCast(draggedHandIndex) && draggedHandRaisedEnough;
                     if (accepted) UseShopRewardCard(draggedHandIndex); else RestoreStartingHandCard(draggedHandIndex);
-                    draggedHandIndex = -1; inputEvent.Use(); return;
+                    draggedHandIndex = -1; draggedHandRaisedEnough = false; inputEvent.Use(); return;
                 }
                 if (rewardChoiceActive || shopChoiceActive || eventChoiceActive)
                 {
                     bool rejected = IsPointOverUsedCardPile(screenPoint);
-                    bool accepted = !rejected && IsCardRaisedForCast(draggedHandIndex)
+                    bool accepted = !rejected && IsCardRaisedForCast(draggedHandIndex) && draggedHandRaisedEnough
                         && (!shopChoiceActive || CanPurchaseShopCard(draggedHandIndex));
                     if (accepted || (rewardChoiceActive && rejected))
                     {
@@ -244,6 +271,7 @@ namespace CardOpen.Prototype
                 {
                     DiscardStartingHandCard(draggedHandIndex);
                     draggedHandIndex = -1;
+                    draggedHandRaisedEnough = false;
                     inputEvent.Use();
                     return;
                 }
@@ -251,6 +279,7 @@ namespace CardOpen.Prototype
                 {
                     UseStartingHandCard(draggedHandIndex, targetEnemyIndex);
                     draggedHandIndex = -1;
+                    draggedHandRaisedEnough = false;
                     inputEvent.Use();
                     return;
                 }
@@ -258,6 +287,7 @@ namespace CardOpen.Prototype
                 {
                     UseStartingHandCard(draggedHandIndex, -1);
                     draggedHandIndex = -1;
+                    draggedHandRaisedEnough = false;
                     inputEvent.Use();
                     return;
                 }
@@ -355,6 +385,11 @@ namespace CardOpen.Prototype
         {
             if (card == null) return;
             usedPileDetailCard = card;
+            if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(false);
+            if (combatPlayerCharacter != null) combatPlayerCharacter.SetActive(false);
+            if (usedPileRoot != null)
+                for (int i = 0; i < usedPileRoot.childCount; i++)
+                    if (usedPileRoot.GetChild(i) != card.transform) usedPileRoot.GetChild(i).gameObject.SetActive(false);
             deckInspectionDragging = false;
             deckInspectionReturning = false;
             deckInspectionPressOutside = false;
@@ -370,6 +405,12 @@ namespace CardOpen.Prototype
             deckInspectionDragging = false;
             deckInspectionReturning = false;
             usedPileDetailCard = null;
+            if (usedPileRoot != null)
+            {
+                usedPileRoot.gameObject.SetActive(!stageSelectionVisible);
+                for (int i = 0; i < usedPileRoot.childCount; i++) usedPileRoot.GetChild(i).gameObject.SetActive(true);
+            }
+            if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(stageSelectionVisible);
             if (deckInspectionBackdrop != null) deckInspectionBackdrop.SetActive(false);
             LayoutUsedCardPile();
         }
@@ -707,7 +748,7 @@ namespace CardOpen.Prototype
         {
             return index >= 0 && index < cards.Count && cards[index] != null
                 && (index >= startingHandHomePositions.Count
-                    || cards[index].transform.position.y > startingHandHomePositions[index].y + 0.28f);
+                    || cards[index].transform.position.y > startingHandHomePositions[index].y + 3.00f);
         }
         private void UseStartingHandCard(int index, int targetEnemyIndex)
         {
@@ -749,6 +790,8 @@ namespace CardOpen.Prototype
         private void DiscardStartingHandCard(int index)
         {
             if (index < 0 || index >= cards.Count || cards[index] == null) return;
+            bool firstCardState = hasPlayedCardThisTurn;
+            int castState = usedCastCount;
             CardVisual discardedCard = cards[index];
             StoredCard discardedStoredCard = index < currentPackCards.Count ? currentPackCards[index] : null;
             global::CardData discardedData = discardedStoredCard != null ? discardedStoredCard.Data : null;
@@ -769,6 +812,8 @@ namespace CardOpen.Prototype
             RefreshHandCardInteractionStates();
             if (usedPileRoutine != null) StopCoroutine(usedPileRoutine);
             usedPileRoutine = StartCoroutine(AnimateCardIntoUsedPile(discardedCard, startPosition));
+            hasPlayedCardThisTurn = firstCardState;
+            usedCastCount = castState;
         }
         private void ResolveUsedCardCast(StoredCard card, int castCount, int targetEnemyIndex)
         {
@@ -1368,7 +1413,8 @@ namespace CardOpen.Prototype
         }
         private Material CreateTextureMaterial(string key, Texture texture, bool transparent, int queueOffset)
         {
-            Shader shader = Shader.Find(transparent ? "Universal Render Pipeline/Unlit" : "Universal Render Pipeline/Lit");
+            // Card surfaces are flat 2D artwork; avoid per-pixel lighting for every card layer.
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
             if (shader == null) shader = Shader.Find(transparent ? "Unlit/Transparent" : "Standard");
             if (shader == null) shader = Shader.Find("Unlit/Texture");
             if (shader == null)
@@ -1454,7 +1500,8 @@ namespace CardOpen.Prototype
         private Material GetMaterial(string key, Color color, float smoothness)
         {
             if (materials.TryGetValue(key, out Material material)) return material;
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            // All prototype world surfaces are authored as flat 2D-style colors.
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
             if (shader == null) shader = Shader.Find("Standard");
             if (shader == null) shader = Shader.Find("Unlit/Color");
             if (shader == null)

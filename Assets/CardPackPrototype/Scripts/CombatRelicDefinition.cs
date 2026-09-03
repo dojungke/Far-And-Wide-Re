@@ -4,7 +4,12 @@ public enum CombatRelicEffect
 {
     GreenCardFlatDamage,
     CardUseDamagePercent,
-    ShopCurrency
+    ShopCurrency,
+    RedCardFlatDamage,
+    BlueCardFlatDamage,
+    BlackCardFlatDamage,
+    WhiteCardFlatDamage,
+    BlackWhiteCardFlatDamage
 }
 
 [CreateAssetMenu(fileName = "CombatRelic", menuName = "CardOpen/Combat Relic")]

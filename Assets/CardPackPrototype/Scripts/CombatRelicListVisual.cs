@@ -24,6 +24,10 @@ namespace CardOpen.Prototype
             public GameObject Root;
             public SpriteRenderer Icon;
             public TextMeshPro Amount;
+            public int LastAmount;
+            public float LastFontSize;
+            public bool LastPercent;
+            public bool HasText;
         }
 
         private readonly List<Slot> slots = new List<Slot>();
@@ -56,10 +60,19 @@ namespace CardOpen.Prototype
                 bool showAmount = entry.Definition.ShowAmountAsPercent || entry.Definition.Effect == CombatRelicEffect.ShopCurrency || entry.Amount > 0;
                 slot.Amount.gameObject.SetActive(showAmount);
                 if (!showAmount) continue;
-                slot.Amount.text = entry.Definition.ShowAmountAsPercent ? "+" + entry.Amount + "%" : entry.Amount.ToString();
-                slot.Amount.fontSize = Mathf.Clamp(iconSize.y * 78f, 1.1f, 2.7f);
-                ApplyOutline(slot.Amount);
-                slot.Amount.ForceMeshUpdate(true, true);
+                float fontSize = Mathf.Clamp(iconSize.y * 78f, 1.1f, 2.7f);
+                bool isPercent = entry.Definition.ShowAmountAsPercent;
+                if (!slot.HasText || slot.LastAmount != entry.Amount || !Mathf.Approximately(slot.LastFontSize, fontSize) || slot.LastPercent != isPercent)
+                {
+                    slot.Amount.text = isPercent ? "+" + entry.Amount + "%" : entry.Amount.ToString();
+                    slot.Amount.fontSize = fontSize;
+                    ApplyOutline(slot.Amount);
+                    slot.Amount.ForceMeshUpdate(true, true);
+                    slot.LastAmount = entry.Amount;
+                    slot.LastFontSize = fontSize;
+                    slot.LastPercent = isPercent;
+                    slot.HasText = true;
+                }
                 slot.Amount.GetComponent<MeshRenderer>().sortingOrder = sortingOrder + 2;
             }
         }
@@ -84,7 +97,7 @@ namespace CardOpen.Prototype
                 amount.color = Color.white;
                 amount.outlineWidth = CombatTextOutline.OutlineThickness;
                 amount.outlineColor = Color.black;
-                amount.extraPadding = true;
+                amount.extraPadding = false;
                 amount.rectTransform.sizeDelta = new Vector2(0.9f, 0.5f);
                 amount.rectTransform.localPosition = new Vector3(0.27f, -0.14f, -0.01f);
                 slots.Add(new Slot { Root = root, Icon = icon, Amount = amount });
@@ -92,7 +105,11 @@ namespace CardOpen.Prototype
             for (int i = 0; i < slots.Count; i++)
             {
                 TextMeshPro amount = slots[i].Amount;
-                if (amount.font != nextFont) amount.font = nextFont;
+                if (amount.font != nextFont)
+                {
+                    amount.font = nextFont;
+                    slots[i].HasText = false;
+                }
                 amount.enableAutoSizing = true;
                 amount.fontSizeMin = 0f;
                 amount.fontSizeMax = 3f;

@@ -94,7 +94,13 @@ namespace CardOpen.Prototype
                 GameObject pileObject = new GameObject("Used Card Pile");
                 usedPileRoot = pileObject.transform;
             }
-            if (usedPilePlaceholder != null) Destroy(usedPilePlaceholder.gameObject);
+            // The placeholder is static UI. Reuse it between combats instead of rebuilding
+            // its layered SpriteRenderer/TMP hierarchy on every hand reset.
+            if (usedPilePlaceholder != null)
+            {
+                usedPilePlaceholder.gameObject.SetActive(true);
+                return;
+            }
 
             global::CardColor initialColor = (global::CardColor)UnityEngine.Random.Range(0, 3);
             if (currentPackCards.Count > 0)
@@ -207,7 +213,7 @@ namespace CardOpen.Prototype
                 label.fontSizeMin = 0.1f;
                 label.color = Color.white;
                 CombatTextOutline.ApplyToWhiteText(label);
-                label.extraPadding = true;
+                label.extraPadding = false;
                 label.rectTransform.sizeDelta = new Vector2(18f, 5.4f);
                 MeshRenderer renderer = label.GetComponent<MeshRenderer>();
                 if (renderer != null) renderer.sortingOrder = 1700;
@@ -871,6 +877,9 @@ namespace CardOpen.Prototype
         {
             if (index < 0 || index >= deckVisuals.Count) return;
             inspectedDeckIndex = index;
+            if (usedPileRoot != null) usedPileRoot.gameObject.SetActive(false);
+            if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(false);
+            if (combatPlayerCharacter != null) combatPlayerCharacter.SetActive(false);
             discardConfirmationVisible = false;
             deckInspectionDragging = false;
             deckInspectionReturning = false;
@@ -900,6 +909,8 @@ namespace CardOpen.Prototype
             deckInspectionHasDragged = false;
             discardConfirmationVisible = false;
             inspectedDeckIndex = -1;
+            if (usedPileRoot != null) usedPileRoot.gameObject.SetActive(!stageSelectionVisible);
+            if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(stageSelectionVisible);
             if (pack != null) pack.gameObject.SetActive(inspectionPackWasActive);
             if (cardStack != null) cardStack.gameObject.SetActive(inspectionStackWasActive);
             if (phase == RevealPhase.PackChoice && inspectedPackChoice == null)

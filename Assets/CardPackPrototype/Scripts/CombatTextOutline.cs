@@ -40,7 +40,7 @@ namespace CardOpen.Prototype
             text.color = Color.white;
             text.outlineColor = Color.black;
             text.outlineWidth = OutlineThickness;
-            text.extraPadding = true;
+            text.extraPadding = false;
             text.UpdateMeshPadding();
         }
 

@@ -222,6 +222,7 @@ namespace CardOpen.Prototype
         private string pendingRewardContextTitle;
         private string pendingRewardContextMessage;
         private bool stageChapterInitialized;
+        private bool firstStageChoiceBonusAvailable = true;
         private bool finalBossStageSpawned;
         private bool stageSelectionVisible;
         private bool restStageActive;
@@ -475,6 +476,7 @@ namespace CardOpen.Prototype
         private float discardPileHoverOffsetY;
         private int pressedHandIndex = -1;
         private Vector2 pressedHandScreenPosition;
+        private bool draggedHandRaisedEnough;
         private Vector2 lastHandHoverPointer;
         private bool hasHandHoverPointer;
         private bool handHoverPointerDirty = true;

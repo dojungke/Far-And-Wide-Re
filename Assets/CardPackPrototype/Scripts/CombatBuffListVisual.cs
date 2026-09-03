@@ -23,6 +23,9 @@ namespace CardOpen.Prototype
             public GameObject Root;
             public SpriteRenderer Icon;
             public TextMeshPro Amount;
+            public int LastAmount;
+            public float LastFontSize;
+            public bool HasText;
         }
 
         private readonly List<Slot> slots = new List<Slot>();
@@ -51,10 +54,17 @@ namespace CardOpen.Prototype
                 Vector2 spriteSize = slot.Icon.sprite.bounds.size;
                 slot.Icon.transform.localScale = new Vector3(iconSize.x / Mathf.Max(0.001f, spriteSize.x),
                     iconSize.y / Mathf.Max(0.001f, spriteSize.y), 1f);
-                slot.Amount.text = entry.Amount.ToString();
-                slot.Amount.fontSize = Mathf.Clamp(iconSize.y * 85f, 1.25f, 3f);
-                ApplyOutline(slot.Amount);
-                slot.Amount.ForceMeshUpdate(true, true);
+                float fontSize = Mathf.Clamp(iconSize.y * 85f, 1.25f, 3f);
+                if (!slot.HasText || slot.LastAmount != entry.Amount || !Mathf.Approximately(slot.LastFontSize, fontSize))
+                {
+                    slot.Amount.text = entry.Amount.ToString();
+                    slot.Amount.fontSize = fontSize;
+                    ApplyOutline(slot.Amount);
+                    slot.Amount.ForceMeshUpdate(true, true);
+                    slot.LastAmount = entry.Amount;
+                    slot.LastFontSize = fontSize;
+                    slot.HasText = true;
+                }
                 slot.Amount.GetComponent<MeshRenderer>().sortingOrder = sortingOrder + 2;
             }
         }
@@ -79,7 +89,7 @@ namespace CardOpen.Prototype
                 amount.color = Color.white;
                 amount.outlineWidth = CombatTextOutline.OutlineThickness;
                 amount.outlineColor = Color.black;
-                amount.extraPadding = true;
+                amount.extraPadding = false;
                 amount.rectTransform.sizeDelta = new Vector2(0.7f, 0.5f);
                 amount.rectTransform.localPosition = new Vector3(0.20f, -0.13f, -0.01f);
                 slots.Add(new Slot { Root = root, Icon = icon, Amount = amount });
@@ -87,7 +97,11 @@ namespace CardOpen.Prototype
             for (int i = 0; i < slots.Count; i++)
             {
                 TextMeshPro amount = slots[i].Amount;
-                if (amount.font != nextFont) amount.font = nextFont;
+                if (amount.font != nextFont)
+                {
+                    amount.font = nextFont;
+                    slots[i].HasText = false;
+                }
                 amount.enableAutoSizing = true;
                 amount.fontSizeMin = 0f;
                 amount.fontSizeMax = 3f;

@@ -172,7 +172,7 @@ namespace CardOpen.Prototype
             textMesh.fontSizeMax = 2.15f;
             textMesh.fontSizeMin = 0.15f;
             textMesh.margin = Vector4.zero;
-            textMesh.extraPadding = true;
+            textMesh.extraPadding = false;
             textMesh.ForceMeshUpdate(true, true);
             RegisterTmpRenderers(textObject, TextSortingOrder + 4);
         }
@@ -645,7 +645,7 @@ namespace CardOpen.Prototype
             textMesh.fontSizeMin = 0.10f;
             textMesh.margin = new Vector4(0.01f, 0.01f, 0.01f, 0.01f);
             textMesh.richText = false;
-            textMesh.extraPadding = true;
+            textMesh.extraPadding = false;
             ApplyTmpOutline(textMesh, addOutline);
             textMesh.ForceMeshUpdate(true, true);
 
@@ -683,7 +683,7 @@ namespace CardOpen.Prototype
             textMesh.fontSizeMin = 0.15f;
             textMesh.margin = new Vector4(0.025f, 0.015f, 0.025f, 0.015f);
             textMesh.richText = false;
-            textMesh.extraPadding = true;
+            textMesh.extraPadding = false;
             ApplyTmpOutline(textMesh, addOutline);
             textMesh.ForceMeshUpdate(true, true);
 

@@ -231,6 +231,8 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
             for (int i = 0; i < cards.Count; i++)
                 if (cards[i] != null) cards[i].gameObject.SetActive(false);
             if (usedPileRoot != null) usedPileRoot.gameObject.SetActive(false);
+            if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(false);
+            if (combatPlayerCharacter != null) combatPlayerCharacter.SetActive(false);
             SetPlayerCombatStatusVisible(false);
             if (combatDeckInspectionUiRoot != null) combatDeckInspectionUiRoot.SetActive(true);
             if (Camera.main != null)
@@ -255,6 +257,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
             if (deckInspectionBackdrop != null && inspectedDeckIndex < 0 && usedPileDetailCard == null)
                 deckInspectionBackdrop.SetActive(false);
             if (usedPileRoot != null) usedPileRoot.gameObject.SetActive(!stageSelectionVisible);
+            if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(stageSelectionVisible);
             LayoutUsedCardPile();
             LayoutStartingHand();
             if (stageSelectionVisible) { LayoutStageSelectionHand(); LayoutStageSelectionCharacter(); }
@@ -613,6 +616,9 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
 
             combatDeckInspectionDetailIndex = index;
             combatDeckInspectionDetailCard = visual;
+            if (usedPileRoot != null) usedPileRoot.gameObject.SetActive(false);
+            if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(false);
+            if (combatPlayerCharacter != null) combatPlayerCharacter.SetActive(false);
             SetRuntimeUiVisibleForDeckDetail(false);
             if (combatDeckInspectionUiRoot != null) combatDeckInspectionUiRoot.SetActive(false);
             // Use the original battle background in the legacy-style card detail view.
@@ -1157,7 +1163,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
         private void DrawPlayerHealthAndBuffs(float scale, float offsetX, float offsetY)
         {
             if (Event.current.type != EventType.Repaint) return;
-            if (stageSelectionVisible)
+            if (stageSelectionVisible || shopChoiceActive || inspectedDeckIndex >= 0 || combatDeckInspectionDetailCard != null || usedPileDetailCard != null)
             {
                 if (combatPlayerCharacter != null) combatPlayerCharacter.SetActive(false);
             }

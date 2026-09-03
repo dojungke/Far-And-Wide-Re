@@ -144,6 +144,7 @@ namespace CardOpen.Prototype
                 ClearStageDiscardPileVisuals();
                 stageDrawPile.Clear();
                 finalBossStageSpawned = false;
+                firstStageChoiceBonusAvailable = true;
                 global::StageDeckDefinition stageDeck = Resources.Load<global::StageDeckDefinition>("Combat/StageDeck");
                 if (stageDeck == null || stageDeck.Entries == null || stageDeck.Entries.Count == 0)
                 {
@@ -162,8 +163,19 @@ namespace CardOpen.Prototype
                 stageChapterInitialized = true;
             }
 
-            while (stageHand.Count < 5 && DrawStageCardToHand()) { }
-            SpawnFinalBossStageIfNeeded();
+            bool chapterFinished = stageDiscardPile.Count >= 6 || (stageHand.Count == 0 && stageDiscardPile.Count > 0);
+            if (chapterFinished)
+            {
+                stageDrawPile.Clear();
+                ClearStageHand(false);
+                SpawnFinalBossStageIfNeeded();
+            }
+            else
+            {
+                while (stageHand.Count < 5 && DrawStageCardToHand()) { }
+                SpawnFinalBossStageIfNeeded();
+            }
+            phase = RevealPhase.PackChoice;
             stageSelectionVisible = true;
             startingHandVisible = false;
             ClearCards();
@@ -248,9 +260,10 @@ namespace CardOpen.Prototype
             if (index < 0 || index >= stageHand.Count || stageHand[index] == null) return false;
             global::StageCardType candidate = stageHand[index];
             global::StageCardType topDiscard = GetTopStageDiscardCard();
-            if (topDiscard == null)
+            if (topDiscard == null || firstStageChoiceBonusAvailable)
             {
-                enhancedCast = GetStageRuntimeColor(candidate) == global::CardColor.White;
+                // Discarding does not consume the first-stage color bonus; only entering a stage does.
+                enhancedCast = true;
                 return true;
             }
             bool matchingNumber = candidate.Number == topDiscard.Number;
@@ -431,7 +444,7 @@ namespace CardOpen.Prototype
         {
             return index >= 0 && index < stageHandVisuals.Count && stageHandVisuals[index] != null
                 && (index >= stageHandHomePositions.Count
-                    || stageHandVisuals[index].transform.position.y > stageHandHomePositions[index].y + 0.28f);
+                    || stageHandVisuals[index].transform.position.y > stageHandHomePositions[index].y + 3.00f);
         }
         private void CreateStageDiscardPile()
         {
@@ -532,7 +545,15 @@ namespace CardOpen.Prototype
 
         private void DiscardStageHandCard(int index)
         {
+            bool discardedBoss = index >= 0 && index < stageHand.Count && stageHand[index] != null
+                && stageHand[index].Kind == global::StageCardKind.BossBattle;
             MoveStageHandCardToDiscard(index, false);
+            if (discardedBoss) finalBossStageSpawned = false;
+            if (stageHand.Count == 0 && stageDiscardPile.Count > 0)
+            {
+                stageDrawPile.Clear();
+                SpawnFinalBossStageIfNeeded();
+            }
             LayoutStageSelectionHand();
             LayoutStageDiscardPile();
         }
@@ -559,6 +580,7 @@ namespace CardOpen.Prototype
             if (precheckStage == null || !CanUseStageCard(index, out enhancedCast)) return;
             global::StageCardType stage = stageHand[index];
             if (stage == null) return;
+            firstStageChoiceBonusAvailable = false;
             if (stage.Kind == global::StageCardKind.Event) { StartEventStage(index, stage); return; }
             if (stage.Kind != global::StageCardKind.Rest && stage.Encounters == null) return;
             SetCombatEntryFade(0f);
@@ -588,7 +610,7 @@ namespace CardOpen.Prototype
         }
         private IEnumerator EnterRestWithFade(global::StageCardType stage)
         {
-            yield return FadeCombatEntry(0f, 1f, 0.16f);
+            yield return FadeCombatEntry(0f, 1f, 0.08f);
             int stageIndex = stageHand.IndexOf(stage);
             if (stageIndex < 0) { SetCombatEntryFade(0f); combatEntryRoutine = null; yield break; }
             MoveStageHandCardToDiscard(stageIndex, true);
@@ -597,7 +619,6 @@ namespace CardOpen.Prototype
             stageDeckInspectionMode = false;
             if (stageSelectionCharacter != null) stageSelectionCharacter.SetActive(false);
             SetRestCharacterVisible(true);
-            for (int i = 0; i < stageHandVisuals.Count; i++) if (stageHandVisuals[i] != null) stageHandVisuals[i].gameObject.SetActive(false);
             if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(false);
             for (int i = 0; i < stageHandVisuals.Count; i++) if (stageHandVisuals[i] != null) stageHandVisuals[i].gameObject.SetActive(false);
             if (usedPileRoot != null) usedPileRoot.gameObject.SetActive(false);
@@ -608,7 +629,7 @@ namespace CardOpen.Prototype
             // Rest is a single mandatory choice: keep the discard pile hidden and make its card stand out.
             if (usedPileRoot != null) usedPileRoot.gameObject.SetActive(false);
             if (cards.Count > 0 && cards[0] != null) cards[0].SetInteractionState(true, true);
-            yield return FadeCombatEntry(1f, 0f, 0.20f);
+            yield return FadeCombatEntry(1f, 0f, 0.10f);
             combatEntryRoutine = null;
         }
         private void UseRestCard(int index)
@@ -626,7 +647,7 @@ namespace CardOpen.Prototype
         private IEnumerator EnterCombatWithFade(global::StageCardType stage, bool enhancedCast)
         {
             // Keep the stage screen visible while it fades out, then hide all synchronous setup behind black.
-            yield return FadeCombatEntry(0f, 1f, 0.16f);
+            yield return FadeCombatEntry(0f, 1f, 0.08f);
             int stageIndex = stageHand.IndexOf(stage);
             if (stageIndex < 0)
             {
@@ -649,13 +670,13 @@ namespace CardOpen.Prototype
             for (int i = 0; i < stageHandVisuals.Count; i++)
                 if (stageHandVisuals[i] != null) stageHandVisuals[i].gameObject.SetActive(false);
             if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(false);
-            for (int i = 0; i < stageHandVisuals.Count; i++) if (stageHandVisuals[i] != null) stageHandVisuals[i].gameObject.SetActive(false);
+
             if (usedPileRoot != null) usedPileRoot.gameObject.SetActive(true);
             CreateEnemyStates();
             RefreshEnemyVisual();
             BeginStartingHand();
             yield return null;
-            yield return FadeCombatEntry(1f, 0f, 0.20f);
+            yield return FadeCombatEntry(1f, 0f, 0.10f);
             combatEntryRoutine = null;
         }
         private IEnumerator FadeCombatEntry(float from, float to, float duration)
