@@ -13,9 +13,8 @@ MonoBehaviour:
   m_Name: Bind
   m_EditorClassIdentifier: Assembly-CSharp::CombatBuffDefinition
   BuffName: "\uC18D\uBC15"
-  Description: "\uBCF4\uC720 \uC911\uC778 \uB3D9\uC548 \uC190 \uAE30\uBCF8 \uC78E
-    \uC218\uAC00 1\uC7A5 \uAC10\uC18C\uD569\uB2C8\uB2E4. \uB2E4\uC2DC \uBD80\uC5EC\uB418\uBA74
-    \uB0A8\uC740 \uC9C0\uC18D\uC2DC\uAC04\uC774 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+  Description: "\uCC28\uB840 \uC2DC\uC791 \uC2DC \uAE30\uBCF8 \uD578\uB4DC \uCE74\uB4DC\uC218\uAC00
+    1 \uAC10\uC18C\uD558\uACE0, \uB0A8\uC740 \uD69F\uC218\uAC00 1 \uAC10\uC18C\uD569\uB2C8\uB2E4."
   EnglishName: Bind
   EnglishDescription: While active, reduce the base hand size by 1. Reapplying it
     increases the remaining duration.

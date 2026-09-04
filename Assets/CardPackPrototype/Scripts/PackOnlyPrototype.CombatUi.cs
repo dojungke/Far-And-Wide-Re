@@ -1684,9 +1684,6 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
                 new Vector3(scale, scale, 1f));
             GUI.Box(UiRect(new Rect(270f, 45f, 740f, 485f), new Rect(50f, 270f, 620f, 650f)), GUIContent.none, discardPanelStyle);
             bool cleared = phase == RevealPhase.RunCleared;
-            int goalIndex = Mathf.Clamp(currentGoalIndex, 0, GoalScores.Length - 1);
-            int targetScore = GoalScores[goalIndex];
-            int reachedStage = cleared ? GoalScores.Length : Mathf.Clamp(currentGoalIndex + 1, 1, GoalScores.Length);
             bool defeated = !sharedResultMode && playerHealth <= 0;
             string title = cleared ? Ui("런 클리어!", "RUN CLEARED!") : Ui("도전 실패", "CHALLENGE FAILED");
             string resultMessage = cleared
@@ -1696,27 +1693,11 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
                     : defeated
                         ? Ui("체력이 0이되어 패배 하였습니다.", "You were defeated because your health reached 0.")
                         : Ui("이번 라운드에서 목표 점수를 달성하지 못했습니다.", "The goal score was not reached this round.");
-            string roundValue = cleared
-                ? Ui("완료", "CLEAR")
-                : roundScore.ToString("N0") + " / " + targetScore.ToString("N0");
             if (sharedResultMode && cleared)
                 GUI.Label(UiRect(new Rect(450f, 58f, 380f, 32f), new Rect(190f, 292f, 340f, 36f)),
                     Ui("공유받은 결과", "SHARED RESULT"), runEndBadgeStyle);
             GUI.Label(UiRect(new Rect(320f, 88f, 640f, 70f), new Rect(90f, 330f, 540f, 82f)), title, runEndTitleStyle);
             GUI.Label(UiRect(new Rect(340f, 154f, 600f, 42f), new Rect(90f, 410f, 540f, 48f)), resultMessage, runEndBodyStyle);
-            if (cleared)
-            {
-                GUI.Label(UiRect(new Rect(320f, 212f, 200f, 30f), new Rect(80f, 485f, 180f, 32f)), Ui("총점", "TOTAL SCORE"), runEndStatLabelStyle);
-                GUI.Label(UiRect(new Rect(540f, 212f, 200f, 30f), new Rect(270f, 485f, 180f, 32f)), Ui("도달 단계", "STAGE"), runEndStatLabelStyle);
-                GUI.Label(UiRect(new Rect(760f, 212f, 200f, 30f), new Rect(460f, 485f, 180f, 32f)), Ui("개봉 팩", "PACKS"), runEndStatLabelStyle);
-                GUI.Label(UiRect(new Rect(320f, 242f, 200f, 48f), new Rect(80f, 520f, 180f, 48f)), totalScore.ToString("N0"), runEndStatValueStyle);
-                GUI.Label(UiRect(new Rect(540f, 242f, 200f, 48f), new Rect(270f, 520f, 180f, 48f)), reachedStage + " / " + GoalScores.Length, runEndStatValueStyle);
-                GUI.Label(UiRect(new Rect(760f, 242f, 200f, 48f), new Rect(460f, 520f, 180f, 48f)), completedPacks.ToString("N0"), runEndStatValueStyle);
-                GUI.Label(UiRect(new Rect(335f, 300f, 610f, 42f), new Rect(80f, 585f, 560f, 62f)),
-                    Ui("라운드 점수  ", "ROUND SCORE  ") + roundValue, runEndBodyStyle);
-                GUI.Label(UiRect(new Rect(335f, 340f, 610f, 32f), new Rect(80f, 650f, 560f, 54f)),
-                    Ui("아래 덱 카드를 눌러 상세히 볼 수 있어요.", "Select a deck card below to inspect it."), runEndHintStyle);
-            }
             Rect leftButtonRect = UiRect(new Rect(360f, 400f, 260f, 70f), new Rect(90f, 755f, 250f, 76f));
             Rect rightButtonRect = sharedResultMode ? UiRect(new Rect(660f, 400f, 260f, 70f), new Rect(380f, 755f, 250f, 76f)) : UiRect(new Rect(510f, 400f, 260f, 70f), new Rect(235f, 755f, 250f, 76f));
             if (sharedResultMode)

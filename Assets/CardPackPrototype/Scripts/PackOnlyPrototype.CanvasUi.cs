@@ -1013,20 +1013,12 @@ namespace CardOpen.Prototype
             }
             if (!visible) return;
             bool cleared = phase == RevealPhase.RunCleared;
-            int goalIndex = Mathf.Clamp(currentGoalIndex, 0, GoalScores.Length - 1);
-            int targetScore = GoalScores[goalIndex];
-            int reachedStage = cleared ? GoalScores.Length : Mathf.Clamp(currentGoalIndex + 1, 1, GoalScores.Length);
             bool defeated = !sharedResultMode && playerHealth <= 0;
             canvasRunEndTitle.text = cleared ? Ui("런 클리어!", "RUN CLEARED!") : Ui("도전 실패", "CHALLENGE FAILED");
             if (cleared)
             {
-                string roundValue = Ui("완료", "CLEAR");
                 canvasRunEndBody.text = (sharedResultMode ? Ui("공유받은 결과\n\n", "SHARED RESULT\n\n") : string.Empty)
-                    + Ui("당신의 꿈나무가 이야기 꼬리에 닿았습니다.", "Your Dream Tree has reached the end of the story.") + "\n\n"
-                    + Ui("총점 ", "TOTAL SCORE ") + totalScore.ToString("N0") + "    "
-                    + Ui("도달 단계 ", "STAGE ") + reachedStage + " / " + GoalScores.Length + "    "
-                    + Ui("라운드 점수 ", "ROUND SCORE ") + roundValue + "\n\n"
-                    + Ui("아래 덱 잎을 눌러 상세히 볼 수 있어요.", "Select a deck card below to inspect it.");
+                    + Ui("당신의 꿈나무가 이야기 꼬리에 닿았습니다.", "Your Dream Tree has reached the end of the story.");
             }
             else
             {
