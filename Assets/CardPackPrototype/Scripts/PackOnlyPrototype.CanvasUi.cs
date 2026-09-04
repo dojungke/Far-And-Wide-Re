@@ -68,7 +68,7 @@ namespace CardOpen.Prototype
             if (fontAsset == null) return;
             HashSet<char> characters = new HashSet<char>();
             AppendUniqueCharacters(characters,
-                "덱 확인 차례 종료 스테이지 선택 전투 보상 상점 상점 나가기 설정 언어 음량 닫기 도전 포기 취소 다음 팩을 선택하세요 봉입 잎 표시할 잎이 없습니다 잎 버리기 이 잎을 버릴까요 사용한 잎 더미 공격 피해량 방어력 출혈 보호막 골드 가지 행동 예정 튜토리얼 다음 건너뛰기 진행 선택 카드 사용 턴 종료 덱 관리 완료 게임 시작 핵심 규칙 카드 흐름");
+                "덱 확인 차례 종료 스테이지 선택 전투 보상 상점 상점 나가기 설정 언어 음량 닫기 도전 포기 취소 다음 팩을 선택하세요 봉입 잎 표시할 잎이 없습니다 잎 버리기 이 잎을 버릴까요 사용한 잎 더미 공격 피해량 방어력 출혈 보호막 골드 가지 행동 예정 튜토리얼 다음 건너뛰기 진행 선택 카드 사용 턴 종료 덱 관리 완료 게임 시작 핵심 규칙 카드 흐름 튜토리얼에 다시 진입하시겠습니까 현재 화면을 초기화하고 튜토리얼을 시작합니다 진입");
             for (int i = 0; i < TutorialPracticeTitles.Length; i++)
             {
                 AppendUniqueCharacters(characters, TutorialPracticeTitles[i]);
@@ -1022,7 +1022,7 @@ namespace CardOpen.Prototype
             {
                 string roundValue = Ui("완료", "CLEAR");
                 canvasRunEndBody.text = (sharedResultMode ? Ui("공유받은 결과\n\n", "SHARED RESULT\n\n") : string.Empty)
-                    + Ui("모든 목표를 달성했습니다.", "All goals cleared.") + "\n\n"
+                    + Ui("당신의 꿈나무가 이야기 꼬리에 닿았습니다.", "Your Dream Tree has reached the end of the story.") + "\n\n"
                     + Ui("총점 ", "TOTAL SCORE ") + totalScore.ToString("N0") + "    "
                     + Ui("도달 단계 ", "STAGE ") + reachedStage + " / " + GoalScores.Length + "    "
                     + Ui("라운드 점수 ", "ROUND SCORE ") + roundValue + "\n\n"

@@ -32,7 +32,31 @@ namespace CardOpen.Prototype
         private TextMeshProUGUI canvasTutorialCompletionBody;
         private Button canvasTutorialCompletionButton;
         private bool tutorialCompletionVisible;
+        private GameObject canvasTutorialReentryConfirmationRoot;
+        private TextMeshProUGUI canvasTutorialReentryConfirmationTitle;
+        private TextMeshProUGUI canvasTutorialReentryConfirmationBody;
+        private bool tutorialReentryConfirmationVisible;
 
+
+        private void RequestTutorialReentry()
+        {
+            if (!stageSelectionVisible || tutorialOpen || settingsOpen
+                || sharedResultMode || completedPacks != 0 || deckCards.Count != 0) return;
+            tutorialReentryConfirmationVisible = true;
+            runtimeUiStateHash = int.MinValue;
+        }
+
+        private void ConfirmTutorialReentry()
+        {
+            tutorialReentryConfirmationVisible = false;
+            TryOpenTutorial();
+        }
+
+        private void CancelTutorialReentry()
+        {
+            tutorialReentryConfirmationVisible = false;
+            runtimeUiStateHash = int.MinValue;
+        }
 
         private void TryOpenTutorial()
         {
@@ -62,6 +86,7 @@ namespace CardOpen.Prototype
             rewardChoiceActive = false;
             shopChoiceActive = false;
             startingHandVisible = true;
+            tutorialReentryConfirmationVisible = false;
             phase = RevealPhase.CardFront;
             usedCastCount = 0;
             ClearCards();
@@ -702,11 +727,60 @@ namespace CardOpen.Prototype
             canvasTutorialGuideButton = CreateCanvasButton("Tutorial Guide Button",
                 new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-160f, -28f), new Vector2(120f, 54f),
-                TryOpenTutorial, out TextMeshProUGUI guideLabel);
+                RequestTutorialReentry, out TextMeshProUGUI guideLabel);
             Outline guideButtonOutline = canvasTutorialGuideButton.GetComponent<Outline>();
             if (guideButtonOutline != null) guideButtonOutline.enabled = false;
             guideLabel.text = Ui("안내", "Guide");
             EnsureTutorialCompletionPopup();
+            EnsureTutorialReentryConfirmationPopup();
+        }
+
+        private void EnsureTutorialReentryConfirmationPopup()
+        {
+            if (canvasTutorialReentryConfirmationRoot != null) return;
+            canvasTutorialReentryConfirmationRoot = new GameObject("Tutorial Reentry Confirmation", typeof(RectTransform), typeof(Image));
+            canvasTutorialReentryConfirmationRoot.transform.SetParent(runtimeUiRoot, false);
+            RectTransform overlay = canvasTutorialReentryConfirmationRoot.GetComponent<RectTransform>();
+            overlay.anchorMin = Vector2.zero;
+            overlay.anchorMax = Vector2.one;
+            overlay.offsetMin = Vector2.zero;
+            overlay.offsetMax = Vector2.zero;
+            Image overlayImage = canvasTutorialReentryConfirmationRoot.GetComponent<Image>();
+            overlayImage.color = new Color(0f, 0f, 0f, 0.72f);
+            overlayImage.raycastTarget = true;
+
+            GameObject panel = new GameObject("Panel", typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(overlay, false);
+            RectTransform panelRect = panel.GetComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.sizeDelta = new Vector2(650f, 280f);
+            Image panelImage = panel.GetComponent<Image>();
+            panelImage.color = Color.white;
+            panelImage.raycastTarget = true;
+            Outline panelOutline = panel.AddComponent<Outline>();
+            panelOutline.effectColor = Color.black;
+            panelOutline.effectDistance = new Vector2(4f, -4f);
+
+            canvasTutorialReentryConfirmationTitle = CreateSettingsText("Title", panel.transform, new Vector2(0f, -34f),
+                new Vector2(580f, 54f), 32f, TextAlignmentOptions.Center);
+            canvasTutorialReentryConfirmationBody = CreateSettingsText("Body", panel.transform, new Vector2(0f, -96f),
+                new Vector2(560f, 96f), 21f, TextAlignmentOptions.Center);
+            canvasTutorialReentryConfirmationTitle.color = new Color(0.04f, 0.05f, 0.08f, 1f);
+            canvasTutorialReentryConfirmationBody.color = new Color(0.08f, 0.09f, 0.12f, 1f);
+            canvasTutorialReentryConfirmationTitle.outlineColor = new Color(0.78f, 0.78f, 0.78f, 1f);
+            canvasTutorialReentryConfirmationBody.outlineColor = new Color(0.86f, 0.86f, 0.86f, 1f);
+            canvasTutorialReentryConfirmationTitle.outlineWidth = 0.10f;
+            canvasTutorialReentryConfirmationBody.outlineWidth = 0.06f;
+
+            CreateSettingsButton("Confirm Tutorial Reentry", panel.transform, new Vector2(-110f, -205f),
+                new Vector2(170f, 58f), ConfirmTutorialReentry, out TextMeshProUGUI confirmLabel);
+            confirmLabel.text = Ui("진입", "Enter");
+            CreateSettingsButton("Cancel Tutorial Reentry", panel.transform, new Vector2(110f, -205f),
+                new Vector2(170f, 58f), CancelTutorialReentry, out TextMeshProUGUI cancelLabel);
+            cancelLabel.text = Ui("취소", "Cancel");
+            canvasTutorialReentryConfirmationRoot.SetActive(false);
         }
 
         private void EnsureTutorialCompletionPopup()
@@ -756,6 +830,21 @@ namespace CardOpen.Prototype
             canvasTutorialCompletionRoot.SetActive(false);
         }
 
+        private bool HandleTutorialReentryConfirmationPointer(Vector2 screenPoint, Event inputEvent)
+        {
+            if (!tutorialReentryConfirmationVisible) return false;
+            if (inputEvent.type == EventType.MouseUp)
+            {
+                Vector2 point = ScreenToReferencePoint(screenPoint);
+                if (new Rect(445f, 425f, 170f, 58f).Contains(point))
+                    ConfirmTutorialReentry();
+                else if (new Rect(665f, 425f, 170f, 58f).Contains(point))
+                    CancelTutorialReentry();
+            }
+            if (inputEvent.type != EventType.Repaint) inputEvent.Use();
+            return inputEvent.type != EventType.Repaint;
+        }
+
         private bool HandleTutorialCompletionPointer(Vector2 screenPoint, Event inputEvent)
         {
             if (!tutorialCompletionVisible) return false;
@@ -791,13 +880,26 @@ namespace CardOpen.Prototype
                 "You have learned the core rules and card flow.\nPress Start Game to begin a real run.");
         }
 
+        private void UpdateCanvasTutorialReentryUi()
+        {
+            EnsureTutorialReentryConfirmationPopup();
+            canvasTutorialReentryConfirmationRoot.SetActive(tutorialReentryConfirmationVisible);
+            if (!tutorialReentryConfirmationVisible) return;
+            canvasTutorialReentryConfirmationRoot.transform.SetAsLastSibling();
+            canvasTutorialReentryConfirmationTitle.text = Ui("튜토리얼에 다시 진입하시겠습니까?", "Enter the tutorial again?");
+            canvasTutorialReentryConfirmationBody.text = Ui(
+                "현재 화면을 초기화하고 튜토리얼을 시작합니다.",
+                "The current screen will reset and the tutorial will begin.");
+        }
+
         private void UpdateCanvasTutorialUi()
         {
             EnsureCanvasTutorialUi();
             UpdateCanvasTutorialCompletionUi();
-            canvasTutorialRoot.SetActive(tutorialOpen);
+            UpdateCanvasTutorialReentryUi();
+            canvasTutorialRoot.SetActive(tutorialOpen && !tutorialReentryConfirmationVisible);
             if (canvasTutorialGuideButton != null)
-                canvasTutorialGuideButton.gameObject.SetActive(!tutorialOpen && !settingsOpen
+                canvasTutorialGuideButton.gameObject.SetActive(!tutorialOpen && !tutorialReentryConfirmationVisible && !settingsOpen
                     && !sharedResultMode && stageSelectionVisible
                     && completedPacks == 0 && deckCards.Count == 0);
             if (!tutorialOpen) return;

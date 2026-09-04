@@ -30,6 +30,7 @@ namespace CardOpen.Prototype
             {
                 GetUiLayout(out float scale, out float offsetX, out float offsetY);
             Vector2 raw = Event.current.mousePosition;
+            if (tutorialReentryConfirmationVisible && HandleTutorialReentryConfirmationPointer(raw, Event.current)) return;
             if (tutorialCompletionVisible && HandleTutorialCompletionPointer(raw, Event.current)) return;
             if (tutorialOpen && HandleTutorialPointer(raw, Event.current)) return;
             if (HandleRuntimeCanvasButtonPointer(raw, Event.current)) return;
@@ -106,7 +107,7 @@ namespace CardOpen.Prototype
             if (canvasTutorialGuideButton != null && canvasTutorialGuideButton.gameObject.activeInHierarchy
                 && new Rect(1000f, 28f, 120f, 54f).Contains(point))
             {
-                TryOpenTutorial();
+                RequestTutorialReentry();
                 inputEvent.Use();
                 return true;
             }

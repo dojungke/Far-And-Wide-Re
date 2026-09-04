@@ -1690,7 +1690,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
             bool defeated = !sharedResultMode && playerHealth <= 0;
             string title = cleared ? Ui("런 클리어!", "RUN CLEARED!") : Ui("도전 실패", "CHALLENGE FAILED");
             string resultMessage = cleared
-                ? Ui("모든 목표를 달성했습니다.", "All goals cleared.")
+                ? Ui("당신의 꿈나무가 이야기 꼬리에 닿았습니다.", "Your Dream Tree has reached the end of the story.")
                 : challengeAbandoned
                     ? Ui("도전을 포기하였습니다.", "The challenge was abandoned.")
                     : defeated

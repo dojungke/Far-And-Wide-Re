@@ -558,6 +558,12 @@ namespace CardOpen.Prototype
             usedPileCardData.Clear();
             usedPileStoredCards.Clear();
             usedPileCard = null;
+            if (usedPileBackgroundDimmed)
+            {
+                SpriteRenderer backgroundRenderer = background != null ? background.GetComponent<SpriteRenderer>() : null;
+                if (backgroundRenderer != null) backgroundRenderer.color = usedPileBackgroundColor;
+                usedPileBackgroundDimmed = false;
+            }
             usedPileExpanded = false;
             usedPileAnimating = false;
             if (usedPilePlaceholder != null) usedPilePlaceholder.gameObject.SetActive(true);
