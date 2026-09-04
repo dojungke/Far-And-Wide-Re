@@ -82,8 +82,9 @@ namespace CardOpen.Prototype
         {
             EnsureStageSelectionCharacter();
             if (stageSelectionCharacter == null || stageSelectionCharacterRenderer == null) return;
-            stageSelectionCharacter.SetActive(stageSelectionVisible);
-            if (!stageSelectionVisible) return;
+            bool characterVisible = stageSelectionVisible && !tutorialOpen;
+            stageSelectionCharacter.SetActive(characterVisible);
+            if (!characterVisible) return;
             stageSelectionCharacter.transform.position = new Vector3(0f, -2f, 0.18f);
             stageSelectionCharacter.transform.rotation = Quaternion.identity;
             stageSelectionCharacter.transform.localScale = Vector3.one * 0.7f;
@@ -187,7 +188,7 @@ namespace CardOpen.Prototype
                 if (enemyVisuals[i] != null) enemyVisuals[i].gameObject.SetActive(false);
             if (usedPileRoot != null) usedPileRoot.gameObject.SetActive(false);
             CreateStageDiscardPile();
-            if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(true);
+            if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(!tutorialOpen);
             LayoutStageSelectionHand();
             LayoutStageDiscardPile();
             LayoutStageSelectionCharacter();
@@ -566,6 +567,11 @@ namespace CardOpen.Prototype
         }
         private void LayoutStageDiscardPile()
         {
+            if (tutorialOpen)
+            {
+                if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(false);
+                return;
+            }
             if (stageDiscardPileRoot == null || !stageDiscardPileRoot.gameObject.activeSelf) return;
             CreateStageDiscardPile();
             Camera camera = Camera.main;
@@ -593,6 +599,7 @@ namespace CardOpen.Prototype
 
         private bool IsPointOverStageDiscardPile(Vector2 screenPoint)
         {
+            if (tutorialOpen) return false;
             Camera camera = Camera.main;
             if (camera == null) return false;
             CardVisual target = stageDiscardPileTop != null ? stageDiscardPileTop : stageDiscardPilePlaceholder;
@@ -627,6 +634,7 @@ namespace CardOpen.Prototype
 
         private void DiscardStageHandCard(int index)
         {
+            if (!AllowTutorialStageDiscard(index)) return;
             bool discardedBoss = index >= 0 && index < stageHand.Count && stageHand[index] != null
                 && stageHand[index].Kind == global::StageCardKind.BossBattle;
             MoveStageHandCardToDiscard(index, false);
@@ -662,6 +670,7 @@ namespace CardOpen.Prototype
             if (precheckStage == null || !CanUseStageCard(index, out enhancedCast)) return;
             global::StageCardType stage = stageHand[index];
             if (stage == null) return;
+            if (!AllowTutorialStageSelection(index, stage)) return;
             if (stage.Kind != global::StageCardKind.Rest && stage.Kind != global::StageCardKind.Event && stage.Encounters == null) return;
             if (stage.Kind != global::StageCardKind.BossBattle) completedStageCount = Mathf.Min(6, completedStageCount + 1);
             firstStageChoiceBonusAvailable = false;
@@ -782,4 +791,4 @@ namespace CardOpen.Prototype
         }
     }
 }
- 
+

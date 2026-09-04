@@ -20,7 +20,8 @@ namespace CardOpen.Prototype
             LoadUserSettings();
             SetupScene();
             StartNewRun();
-            TryLoadSharedResultFromUrl();
+            bool loadedSharedResult = TryLoadSharedResultFromUrl();
+            if (!loadedSharedResult) TryOpenTutorial();
 #if UNITY_WEBGL && !UNITY_EDITOR
             CardOpenReportReady();
 #endif
@@ -410,6 +411,7 @@ namespace CardOpen.Prototype
                 UpdateStageHandHover();
                 UpdateDiscardPileHover();
             }
+            UpdateTutorialPracticeProgress();
             RefreshRuntimeUiOnStateChange();
             if (scorePopups.Count > 0 || canvasScorePopupsActive) UpdateCanvasScorePopups(); // Time-based animation only.
         }
@@ -479,6 +481,7 @@ namespace CardOpen.Prototype
             UpdateCanvasRunEndUi();
             UpdateCanvasDeckInspectionControls();
             UpdateCanvasUsedPileInspectionHud();
+            UpdateCanvasTutorialUi();
             if (canvasEffectPopupRoot != null && !startingHandVisible) canvasEffectPopupRoot.SetActive(false);
         }
         private static void AppendUniqueCharacters(HashSet<char> characters, string value)

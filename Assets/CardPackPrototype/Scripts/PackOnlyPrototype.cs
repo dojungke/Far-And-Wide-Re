@@ -411,6 +411,16 @@ namespace CardOpen.Prototype
         private TextMeshProUGUI canvasEffectPopupBody;
         private readonly List<CanvasIconList> canvasEnemyBuffLists = new List<CanvasIconList>();
         private readonly List<CanvasIconList> canvasEnemyActionBuffLists = new List<CanvasIconList>();
+        private GameObject canvasTutorialRoot;
+        private TextMeshProUGUI canvasTutorialTitle;
+        private TextMeshProUGUI canvasTutorialBody;
+        private TextMeshProUGUI canvasTutorialProgress;
+        private Button canvasTutorialSkipButton;
+        private Button canvasTutorialGuideButton;
+        private bool tutorialOpen;
+        private int tutorialPracticeStage;
+        private int tutorialPracticeHandCount;
+        private global::CombatCardType tutorialPracticeCardType;
         private Image combatEntryFadeImage;
         private Image playerDamageFlashImage;
         private Coroutine playerDamageFlashRoutine;

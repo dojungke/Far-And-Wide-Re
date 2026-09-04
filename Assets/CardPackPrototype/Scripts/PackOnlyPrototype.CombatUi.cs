@@ -17,6 +17,8 @@ namespace CardOpen.Prototype
         private void EndPlayerTurn()
         {
             if (!startingHandVisible || phase != RevealPhase.CardFront || playerHealth <= 0 || enemyTurnRoutine != null) return;
+            if (tutorialOpen && tutorialFlowPhase == TutorialFlowPhase.CardRules
+                && tutorialPracticeStage == TutorialPracticeStepCount - 1) return;
             startingHandVisible = false;
             ResetRelicTurnState();
             ResetHandHoverVisuals();
@@ -219,6 +221,17 @@ namespace CardOpen.Prototype
             ApplyPlayerBurnAtTurnStart();
             if (playerHealth <= 0) return;
             while (cards.Count < StartingHandSize && DrawStarterCardToHand()) { }
+            if (tutorialOpen && tutorialFlowPhase == TutorialFlowPhase.CombatWaitEnemy)
+            {
+                // The refill is complete: expose the deterministic one-card attack step now.
+                tutorialFlowPhase = TutorialFlowPhase.CombatRefillAttack;
+                runtimeUiStateHash = int.MinValue;
+            }
+            else if (tutorialOpen && tutorialFlowPhase == TutorialFlowPhase.CombatRefillEndTurn)
+            {
+                // The second turn has refilled the hand; finish with those same cards.
+                PrepareTutorialCombatFinisher();
+            }
             if (playerBindDuration > 0) playerBindDuration--;
             EnsurePlayableCombatCardAtTurnStart();
             LayoutUsedCardPile();
@@ -314,13 +327,15 @@ namespace CardOpen.Prototype
             Matrix4x4 previousMatrix = GUI.matrix;
             GUI.matrix = Matrix4x4.TRS(new Vector3(offsetX, offsetY, 0f), Quaternion.identity,
                 new Vector3(scale, scale, 1f));
-bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playerHealth > 0;
+bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playerHealth > 0
+                && !(tutorialOpen && tutorialFlowPhase == TutorialFlowPhase.CardRules
+                    && tutorialPracticeStage == TutorialPracticeStepCount - 1);
 
             if (rewardChoiceActive)
             {
                 if (canvasContextTitle == null) GUI.Label(new Rect(0f, 40f, UiReferenceWidth, 54f), Ui("전투 보상", "Combat Reward"), deckRarityStyle);
                 if (canvasContextMessage == null) GUI.Label(new Rect(0f, 92f, UiReferenceWidth, 34f),
-                    Ui("잎를 위로 드래그해 보상을 받고, 버린 잎 더미로 드래그해 거절하세요.",
+                    Ui("잎를 위로 드래그해 보상을 받고, 사용한 잎 더미로 드래그해 거절하세요.",
                         "Drag the card upward to claim it, or drag it to the discard pile to decline."), discardMessageStyle);
                 GUI.matrix = previousMatrix;
                 return;
@@ -385,7 +400,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
             if (deckInspectionBackdrop != null && inspectedDeckIndex < 0 && usedPileDetailCard == null)
                 deckInspectionBackdrop.SetActive(false);
             if (usedPileRoot != null) usedPileRoot.gameObject.SetActive(!stageSelectionVisible);
-            if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(stageSelectionVisible);
+            if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(stageSelectionVisible && !tutorialOpen);
             LayoutUsedCardPile();
             LayoutStartingHand();
             if (stageSelectionVisible) { LayoutStageSelectionHand(); LayoutStageSelectionCharacter(); }

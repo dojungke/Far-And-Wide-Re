@@ -491,7 +491,7 @@ namespace CardOpen.Prototype
                 usedPileRoot.gameObject.SetActive(!stageSelectionVisible);
                 for (int i = 0; i < usedPileRoot.childCount; i++) usedPileRoot.GetChild(i).gameObject.SetActive(true);
             }
-            if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(stageSelectionVisible);
+            if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(stageSelectionVisible && !tutorialOpen);
             if (deckInspectionBackdrop != null) deckInspectionBackdrop.SetActive(false);
             LayoutUsedCardPile();
         }
@@ -980,6 +980,14 @@ namespace CardOpen.Prototype
         private void DiscardStartingHandCard(int index)
         {
             if (index < 0 || index >= cards.Count || cards[index] == null) return;
+            if (ShouldBlockTutorialDiscard())
+            {
+                RestoreStartingHandCard(index);
+                AddScorePopup(Ui("튜토리얼\n잎을 버리지 말고 안내된 잎을 사용하세요.",
+                    "Tutorial\nUse the instructed card instead of discarding it."),
+                    new Color(1f, 0.82f, 0.25f), Time.unscaledTime, scorePopups.Count, 0);
+                return;
+            }
             bool firstCardState = hasPlayedCardThisTurn;
             int castState = usedCastCount;
             CardVisual discardedCard = cards[index];
@@ -1343,8 +1351,34 @@ namespace CardOpen.Prototype
             if (leafMeteorResolving) return false;
             if (index < 0 || index >= currentPackCards.Count || currentPackCards[index] == null) return false;
             StoredCard candidate = currentPackCards[index];
+            if (tutorialOpen && (tutorialFlowPhase == TutorialFlowPhase.CombatEndTurn
+                || tutorialFlowPhase == TutorialFlowPhase.CombatWaitEnemy
+                || tutorialFlowPhase == TutorialFlowPhase.CombatRefillEndTurn))
+                return false;
+
+            if (tutorialOpen && (tutorialFlowPhase == TutorialFlowPhase.CombatTarget
+                || tutorialFlowPhase == TutorialFlowPhase.CombatRefillAttack
+                || tutorialFlowPhase == TutorialFlowPhase.CombatFinish))
+            {
+                int requiredNumber = tutorialFlowPhase == TutorialFlowPhase.CombatFinish ? 2 : 4;
+                if (candidate.Color != global::CardColor.Green || candidate.Number != requiredNumber)
+                    return false;
+            }
+
+            if (tutorialOpen && tutorialFlowPhase == TutorialFlowPhase.CardRules
+                && tutorialPracticeStage == 3)
+            {
+                // Make the chain easy to read: green 4 is enabled first, then green 5.
+                if (cards.Count == tutorialPracticeHandCount
+                    && !(candidate.Color == global::CardColor.Green && candidate.Number == 4))
+                    return false;
+                if (cards.Count == tutorialPracticeHandCount - 1
+                    && !(candidate.Color == global::CardColor.Green && candidate.Number == 5))
+                    return false;
+            }
+
             StoredCard topDiscard = GetTopCombatDiscardCard();
-            if (topDiscard == null) return true;
+            if (topDiscard == null) return false;
 
             bool matchingNumber = candidate.Number == topDiscard.Number;
             bool matchingColor = ColorsMatchForCast(candidate.Color, topDiscard.Color);

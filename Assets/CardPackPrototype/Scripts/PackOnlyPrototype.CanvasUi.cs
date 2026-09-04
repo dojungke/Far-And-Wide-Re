@@ -68,7 +68,17 @@ namespace CardOpen.Prototype
             if (fontAsset == null) return;
             HashSet<char> characters = new HashSet<char>();
             AppendUniqueCharacters(characters,
-                "덱 확인 차례 종료 스테이지 선택 전투 보상 상점 상점 나가기 설정 언어 음량 닫기 도전 포기 취소 다음 팩을 선택하세요 봉입 잎 표시할 잎이 없습니다 잎 버리기 이 잎을 버릴까요 사용한 잎 더미 공격 피해량 방어력 출혈 보호막 골드 가지 행동 예정");
+                "덱 확인 차례 종료 스테이지 선택 전투 보상 상점 상점 나가기 설정 언어 음량 닫기 도전 포기 취소 다음 팩을 선택하세요 봉입 잎 표시할 잎이 없습니다 잎 버리기 이 잎을 버릴까요 사용한 잎 더미 공격 피해량 방어력 출혈 보호막 골드 가지 행동 예정 튜토리얼 다음 건너뛰기 진행 선택 카드 사용 턴 종료 덱 관리 완료 게임 시작 핵심 규칙 카드 흐름");
+            for (int i = 0; i < TutorialPracticeTitles.Length; i++)
+            {
+                AppendUniqueCharacters(characters, TutorialPracticeTitles[i]);
+                AppendUniqueCharacters(characters, TutorialPracticeBodies[i]);
+            }
+            for (int i = 0; i < TutorialChapterTitles.Length; i++)
+            {
+                AppendUniqueCharacters(characters, TutorialChapterTitles[i]);
+                AppendUniqueCharacters(characters, TutorialChapterBodies[i]);
+            }
             global::CardData[] cardData = Resources.LoadAll<global::CardData>("Cards");
             for (int i = 0; i < cardData.Length; i++)
             {
@@ -263,7 +273,9 @@ namespace CardOpen.Prototype
             canvasEndTurnButton.gameObject.SetActive(showEndTurn);
             SetCanvasEndTurnButtonHoverOffset(discardPileHovered);
             bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playerHealth > 0
-                && enemyTurnRoutine == null;
+                && enemyTurnRoutine == null
+                && !(tutorialOpen && tutorialFlowPhase == TutorialFlowPhase.CardRules
+                    && tutorialPracticeStage == TutorialPracticeStepCount - 1);
             canvasEndTurnButton.interactable = canEndTurn;
         }
         private void SetCanvasEndTurnButtonHoverOffset(bool raised)
@@ -791,7 +803,7 @@ namespace CardOpen.Prototype
             if (!shopRewardOpeningActive && !eventChoiceActive && !restStageActive && !stageSelectionVisible && rewardChoiceActive)
             {
                 canvasContextTitle.text = string.IsNullOrEmpty(pendingRewardContextTitle) ? Ui("전투 보상", "Combat Reward") : pendingRewardContextTitle;
-                canvasContextMessage.text = string.IsNullOrEmpty(pendingRewardContextMessage) ? Ui("잎을 위로 드래그해 보상을 받고, 버린 잎 더미로 드래그해 거절하세요.", "Drag the card upward to claim it, or drag it to the discard pile to decline.") : pendingRewardContextMessage;
+                canvasContextMessage.text = string.IsNullOrEmpty(pendingRewardContextMessage) ? Ui("잎을 위로 드래그해 보상을 받고, 사용한 잎 더미로 드래그해 거절하세요.", "Drag the card upward to claim it, or drag it to the discard pile to decline.") : pendingRewardContextMessage;
             }
             if (!shopRewardOpeningActive && !eventChoiceActive && !restStageActive && !stageSelectionVisible && !rewardChoiceActive)
             {

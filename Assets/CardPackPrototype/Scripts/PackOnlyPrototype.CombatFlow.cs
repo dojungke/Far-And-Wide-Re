@@ -313,6 +313,7 @@ namespace CardOpen.Prototype
         }
         private void DiscardShopOfferCard(int cardIndex)
         {
+            if (!AllowTutorialShopDiscard(cardIndex)) return;
             if (cardIndex <= 0 || cardIndex >= cards.Count) { RestoreStartingHandCard(cardIndex); return; }
             int offerIndex = cardIndex - 1;
             if (offerIndex >= 0 && offerIndex < shopOffers.Count) shopOffers.RemoveAt(offerIndex);
@@ -425,6 +426,7 @@ namespace CardOpen.Prototype
 
         private void ResolveOffer(bool accepted, int selectedShopCardIndex = -1)
         {
+            if (!accepted && !AllowTutorialShopExit()) return;
             if (eventChoiceActive) { if (accepted) ResolveEventChoice(selectedShopCardIndex); else { eventChoiceActive = false; ClearCards(); BeginStageSelection(); } return; }
             if (rewardChoiceActive)
             {
