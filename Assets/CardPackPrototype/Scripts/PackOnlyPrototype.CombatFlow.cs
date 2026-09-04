@@ -846,7 +846,7 @@ namespace CardOpen.Prototype
                 pendingShopRewardOffer = null;
                 ClearCards();
                 phase = RevealPhase.RunCleared;
-                return;
+                yield break;
             }
             if (finalBossStageSpawned && lastUsedStageCard != null
                 && lastUsedStageCard.Kind == global::StageCardKind.BossBattle)
