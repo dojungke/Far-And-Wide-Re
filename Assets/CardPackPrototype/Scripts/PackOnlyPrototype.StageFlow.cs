@@ -145,7 +145,9 @@ namespace CardOpen.Prototype
                 stageDrawPile.Clear();
                 finalBossStageSpawned = false;
                 firstStageChoiceBonusAvailable = true;
-                global::StageDeckDefinition stageDeck = Resources.Load<global::StageDeckDefinition>("Combat/StageDeck");
+                completedStageCount = 0;
+                const string stageDeckPath = "Combat/StageDeck";
+                global::StageDeckDefinition stageDeck = Resources.Load<global::StageDeckDefinition>(stageDeckPath);
                 if (stageDeck == null || stageDeck.Entries == null || stageDeck.Entries.Count == 0)
                 {
                     Debug.LogError("Combat/StageDeck asset is missing or empty.");
@@ -163,7 +165,7 @@ namespace CardOpen.Prototype
                 stageChapterInitialized = true;
             }
 
-            bool chapterFinished = stageDiscardPile.Count >= 6 || (stageHand.Count == 0 && stageDiscardPile.Count > 0);
+            bool chapterFinished = completedStageCount >= 6 || (stageHand.Count == 0 && stageDiscardPile.Count > 0 && stageDrawPile.Count == 0);
             if (chapterFinished)
             {
                 stageDrawPile.Clear();
@@ -190,9 +192,30 @@ namespace CardOpen.Prototype
             LayoutStageDiscardPile();
             LayoutStageSelectionCharacter();
 
+            MatchStageDiscardNumberWhenNoCardIsPlayable();
+            LayoutStageDiscardPile();
             RefreshStageCardInteractionStates();
         }
 
+        private string GetStageSelectionTitle()
+        {
+            bool bossVisible = finalBossStageSpawned;
+            if (!bossVisible)
+            {
+                for (int i = 0; i < stageHand.Count; i++)
+                {
+                    if (stageHand[i] != null && stageHand[i].Kind == global::StageCardKind.BossBattle)
+                    {
+                        bossVisible = true;
+                        break;
+                    }
+                }
+            }
+
+            if (bossVisible) return Ui("스테이지 선택 (보스)", "Choose a Stage (Boss)");
+            int completedStages = Mathf.Clamp(completedStageCount + 1, 1, 6);
+            return Ui("스테이지 선택 (" + completedStages + "/6)", "Choose a Stage (" + completedStages + "/6)");
+        }
         private void ShuffleStageCards(List<global::StageCardType> cardsToShuffle)
         {
             for (int i = cardsToShuffle.Count - 1; i > 0; i--)
@@ -215,13 +238,29 @@ namespace CardOpen.Prototype
             return true;
         }
 
+        private global::BattleEncounters GetChapterStageEncounters(global::StageCardType stage)
+        {
+            if (stage == null || currentStageChapter <= 1) return stage != null ? stage.Encounters : null;
+            string encounterName;
+            switch (stage.Kind)
+            {
+                case global::StageCardKind.Battle: encounterName = "일반전투"; break;
+                case global::StageCardKind.EliteBattle: encounterName = "정예전투"; break;
+                case global::StageCardKind.BossBattle: encounterName = "보스전투"; break;
+                default: return stage.Encounters;
+            }
+            string path = "Combat/BattleEncounters/챕터" + currentStageChapter + encounterName;
+            global::BattleEncounters chapterEncounters = Resources.Load<global::BattleEncounters>(path);
+            return chapterEncounters != null ? chapterEncounters : stage.Encounters;
+        }
         private void SpawnFinalBossStageIfNeeded()
         {
             if (finalBossStageSpawned || stageHand.Count > 0 || stageDrawPile.Count > 0) return;
-            global::StageCardType bossTemplate = Resources.Load<global::StageCardType>("Combat/Stages/보스전투");
+            const string bossPath = "Combat/Stages/보스전투";
+            global::StageCardType bossTemplate = Resources.Load<global::StageCardType>(bossPath);
             if (bossTemplate == null)
             {
-                Debug.LogError("Combat/Stages/보스전투 asset is missing.");
+                Debug.LogError(bossPath + " asset is missing.");
                 return;
             }
 
@@ -273,6 +312,49 @@ namespace CardOpen.Prototype
             if (!normalCast) return false;
             enhancedCast = IsEnhancedColorSequence(GetStageRuntimeColor(topDiscard), GetStageRuntimeColor(candidate));
             return true;
+        }
+        private void MatchStageDiscardNumberWhenNoCardIsPlayable()
+        {
+            if (stageDiscardPile.Count == 0 || stageHand.Count == 0) return;
+
+            bool hasPlayableCard = false;
+            for (int i = 0; i < stageHand.Count; i++)
+            {
+                if (stageHand[i] == null) continue;
+                if (CanUseStageCard(i, out _))
+                {
+                    hasPlayableCard = true;
+                    break;
+                }
+            }
+            if (hasPlayableCard) return;
+
+            global::StageCardType topDiscard = GetTopStageDiscardCard();
+            if (topDiscard == null) return;
+
+            List<int> handNumbers = new List<int>();
+            for (int i = 0; i < stageHand.Count; i++)
+            {
+                if (stageHand[i] != null) handNumbers.Add(Mathf.Clamp(stageHand[i].Number, 1, 6));
+            }
+            if (handNumbers.Count == 0) return;
+
+            int newNumber = handNumbers[UnityEngine.Random.Range(0, handNumbers.Count)];
+            if (topDiscard.Number == newNumber) return;
+            topDiscard.Number = newNumber;
+
+            CardVisual oldVisual = stageDiscardPileTop;
+            int visualIndex = stageDiscardPileVisuals.IndexOf(oldVisual);
+            if (oldVisual != null) Destroy(oldVisual.gameObject);
+            if (visualIndex < 0) return;
+
+            CardVisual replacement = CreateStageCardVisual(topDiscard);
+            if (replacement == null) return;
+            replacement.transform.SetParent(stageDiscardPileRoot, true);
+            replacement.SetInteractionState(true, false);
+            replacement.SetFaceUp(true);
+            stageDiscardPileVisuals[visualIndex] = replacement;
+            stageDiscardPileTop = replacement;
         }
         private void RefreshStageCardInteractionStates()
         {
@@ -456,8 +538,8 @@ namespace CardOpen.Prototype
             if (stageDiscardPilePlaceholder != null) return;
 
             stageDiscardPilePlaceholderData = ScriptableObject.CreateInstance<global::CardData>();
-            stageDiscardPilePlaceholderData.Name = "버린 스테이지 카드";
-            stageDiscardPilePlaceholderData.Description = "여기에 스테이지 선택지를 드래그해 버릴 수 있습니다.\n빈자리는 다음 스테이지 완료시 다른 선택지로 채워집니다.\n핸드에 남은 스테이지 선택지가 없거나 6개 스테이지 진행후 보스 스테이지에 진입합니다";
+            stageDiscardPilePlaceholderData.Name = "버린 스테이지 잎";
+            stageDiscardPilePlaceholderData.Description = "여기에 스테이지 선택지를 드래그해 버릴 수 있습니다.\n빈자리는 다음 스테이지 완료시 다른 선택지로 채워집니다.\n손에 남은 스테이지 선택지가 없거나 6개 스테이지 진행후 보스 스테이지에 진입합니다";
             stageDiscardPilePlaceholderData.Rare = global::CardRarity.Common;
             stageDiscardPilePlaceholder = CardVisual.CreatePrefabInstance("Stage Discard Placeholder", stageDiscardPileRoot);
             stageDiscardPilePlaceholder.BuildFromData(stageDiscardPilePlaceholderData, global::CardColor.Black,
@@ -465,7 +547,7 @@ namespace CardOpen.Prototype
                 GetTextureMaterial("CardBack", "CardAssets/Attributes/AttributeBackRemasterPurple", false),
                 GetTextureMaterial("StageDiscardPattern", "CardAssets/Rarities/PatternCommon", true, 0),
                 GetTextureMaterial("StageDiscardMana", "CardAssets/Content/Mana", true, 10), GetTextureMaterial("StageDiscardCost", "CardAssets/Costs/Cost1", true, 20), font, IsEnglishUi);
-            stageDiscardPilePlaceholder.SetDisplayName(Ui("스테이지 버린 카드", "Stage Discard"));
+            stageDiscardPilePlaceholder.SetDisplayName(Ui("스테이지 버린 잎", "Stage Discard"));
             stageDiscardPilePlaceholder.SetFaceUp(true);
         }
 
@@ -580,9 +662,10 @@ namespace CardOpen.Prototype
             if (precheckStage == null || !CanUseStageCard(index, out enhancedCast)) return;
             global::StageCardType stage = stageHand[index];
             if (stage == null) return;
+            if (stage.Kind != global::StageCardKind.Rest && stage.Kind != global::StageCardKind.Event && stage.Encounters == null) return;
+            if (stage.Kind != global::StageCardKind.BossBattle) completedStageCount = Mathf.Min(6, completedStageCount + 1);
             firstStageChoiceBonusAvailable = false;
             if (stage.Kind == global::StageCardKind.Event) { StartEventStage(index, stage); return; }
-            if (stage.Kind != global::StageCardKind.Rest && stage.Encounters == null) return;
             SetCombatEntryFade(0f);
             combatEntryRoutine = StartCoroutine(stage.Kind == global::StageCardKind.Rest ? EnterRestWithFade(stage) : EnterCombatWithFade(stage, enhancedCast));
         }
@@ -590,22 +673,22 @@ namespace CardOpen.Prototype
         {
             global::StageCardType s = ScriptableObject.CreateInstance<global::StageCardType>();
             s.Kind = global::StageCardKind.Event; s.Number = id == 1 ? 5 : 6; s.Color = id == 1 ? global::CardColor.Green : global::CardColor.White;
-            s.StageName = id == 1 ? "떨어진 카드" : "수상한 요구";
-            s.Description = id == 1 ? "바닥에 떨어진 카드를 발견했다." : "수상한 인물이 카드를 요구했다.";
+            s.StageName = id == 1 ? "떨어진 잎" : "수상한 요구";
+            s.Description = id == 1 ? "바닥에 떨어진 잎을 발견했다." : "수상한 인물이 잎을 요구했다.";
             s.EnglishName = id == 1 ? "A Fallen Card" : "A Suspicious Request"; s.EnglishDescription = id == 1 ? "You found a card on the ground." : "A suspicious figure asks for a card.";
             return s;
         }
         private void StartEventStage(int index, global::StageCardType stage)
         {
-            MoveStageHandCardToDiscard(index, true); lastUsedStageCard = stage; stageSelectionVisible = false; eventChoiceActive = true; activeEventId = stage.StageName == "떨어진 카드" ? 1 : 2;
-            BeginOfferHand(stage.StageName, stage.Description + "\\n선택지 카드를 위로 드래그해 사용하세요.", 0);
+            MoveStageHandCardToDiscard(index, true); lastUsedStageCard = stage; stageSelectionVisible = false; eventChoiceActive = true; activeEventId = UnityEngine.Random.Range(1, 3);
+            BeginOfferHand(stage.StageName, stage.Description + "\\n선택지 잎을 위로 드래그해 사용하세요.", 0);
             if (usedPileRoot != null) usedPileRoot.gameObject.SetActive(false);
             if (combatPlayerCharacter != null) combatPlayerCharacter.SetActive(false);
             if (stageSelectionCharacter != null) stageSelectionCharacter.SetActive(false);
             if (stageDiscardPileRoot != null) stageDiscardPileRoot.gameObject.SetActive(false);
             for (int i = 0; i < stageHandVisuals.Count; i++) if (stageHandVisuals[i] != null) stageHandVisuals[i].gameObject.SetActive(false);
             for (int i = 0; i < enemyVisuals.Count; i++) if (enemyVisuals[i] != null) enemyVisuals[i].gameObject.SetActive(false);
-            AddOfferCard(activeEventId == 1 ? "줍는다" : "카드를 건낸다", activeEventId == 1 ? "무작위 고급 카드 1장을 획득합니다." : "무작위 카드를 잃고 별빛 150을 획득합니다.", -1, global::CardColor.White, 1);
+            AddOfferCard(activeEventId == 1 ? "줍는다" : "잎을 건낸다", activeEventId == 1 ? "무작위 고급 잎 1장을 획득합니다." : "무작위 잎을 잃고 별빛 150을 획득합니다.", -1, global::CardColor.White, 1);
             AddOfferCard("무시한다", "스테이지 선택으로 이동합니다.", -1, global::CardColor.Black, 2); LayoutStartingHand(); RefreshHandCardInteractionStates();
         }
         private IEnumerator EnterRestWithFade(global::StageCardType stage)
@@ -663,7 +746,7 @@ namespace CardOpen.Prototype
                 AddScorePopup(Ui("스테이지 강화 시전!\n50 골드 획득", "Enhanced stage cast!\nGained 50 gold"),
                     new Color(1f, 0.82f, 0.25f), Time.unscaledTime, scorePopups.Count, 0);
             }
-            selectedStageEncounters = stage.Encounters;
+            selectedStageEncounters = GetChapterStageEncounters(stage);
             stageSelectionVisible = false;
             stageDeckInspectionMode = false;
             if (stageSelectionCharacter != null) stageSelectionCharacter.SetActive(false);

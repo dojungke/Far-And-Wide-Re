@@ -11,7 +11,7 @@ namespace CardOpen.Prototype
         private const string PrefabResourcePath = "Prefabs/Card";
         private const int CardNameCharactersPerLine = 9;
         private const int LatinCardNameCharactersPerLine = 20;
-        private const float CardNameMaximumWidth = 1.254f;
+        private const float CardNameMaximumWidth = 1.18f;
         private const float CardNameMaximumHeight = 0.38f;
         private const float LatinCardNameHorizontalScale = 0.9f;
         private const int FrameSortingOrder = 0;
@@ -334,10 +334,10 @@ namespace CardOpen.Prototype
                 body = string.IsNullOrWhiteSpace(body) ? natureEffect : body + "\n" + natureEffect;
             string stackEffect = useEnglish
                 ? "On draw, Stack cards: +1 stack."
-                : "카드 뽑을 때 스택 카드 +1스택";
+                : "잎 뽑을 때 스택 잎 +1스택";
             bool alreadyDescribesStackEffect = useEnglish
                 ? body.IndexOf("Stack", System.StringComparison.OrdinalIgnoreCase) >= 0
-                : body.Contains("모든 스택 카드") && body.Contains("1스택");
+                : body.Contains("모든 스택 잎") && body.Contains("1스택");
             if (data != null && data.HasTag(global::CardTag.Stack) && !alreadyDescribesStackEffect)
                 body = string.IsNullOrWhiteSpace(body) ? stackEffect : body + "\n" + stackEffect;
             string mineralEffect = useEnglish

@@ -26,6 +26,7 @@ namespace CardOpen.Prototype
             ResetPerPackAccumulatedBonuses();
             ResetOncePerPackAbilityUsage();
             ClearCards();
+            if (!shopRewardOpeningActive && usedPileRoot != null) ClearUsedCardPile();
             cardStack.position = Vector3.zero;
             cardStack.rotation = Quaternion.identity;
             cardStack.localScale = Vector3.one;
@@ -33,6 +34,8 @@ namespace CardOpen.Prototype
             if (shopRewardOpeningActive) BuildShopRewardHand();
             else BuildStarterDeck();
             CreateUsedCardPile();
+            // Start the first player turn after a combat opening hand is created; shop rewards stay choice-only.
+            if (!shopRewardOpeningActive) BeginPlayerTurn();
             LayoutUsedCardPile();
             cardIndex = 0;
             gestureDragging = false;
@@ -79,12 +82,28 @@ namespace CardOpen.Prototype
         {
             if (index < 0 || index >= cards.Count || index >= shopRewardCards.Count) return;
             ShopReward reward = shopRewardCards[index];
-            if (reward.Card != null) runCombatDeck.Add(reward.Card);
+            if (reward.Card != null) AddCombatCardToRunDeck(reward.Card);
             else if (reward.Relic != null) { AddRelic(reward.Relic); combatRelicVisualHash = int.MinValue; }
             for (int i = 0; i < cards.Count; i++) if (cards[i] != null) Destroy(cards[i].gameObject);
             cards.Clear(); shopRewardCards.Clear();
+            bool returnToStageSelection = eventRewardOpeningActive;
+            eventRewardOpeningActive = false;
             shopRewardOpeningActive = false; pendingShopRewardOffer = null;
-            ClearCards(); BeginShopChoice();
+            ClearCards();
+            if (returnToStageSelection) BeginStageSelection();
+            else BeginShopChoice();
+        }
+        private bool AddCombatCardToRunDeck(global::CombatCard card)
+        {
+            if (card == null || card.Type == null) return false;
+            if (!runCombatDeckInitialized) ResetRunCombatDeckToStarter();
+            runCombatDeck.Add(new global::CombatCard
+            {
+                Type = card.Type,
+                Color = card.Color,
+                Number = Mathf.Clamp(card.Number, 1, 6)
+            });
+            return true;
         }
         private void ResetRunCombatDeckToStarter()
         {
@@ -187,6 +206,7 @@ namespace CardOpen.Prototype
                 Data = data, CombatType = definition, Rarity = data.Rare,
                 Color = card.Color, Number = card.Number, IsHolographic = false
             };
+            RollGreenDiceDamageMultiplier(stored);
             currentPackCards.Add(stored);
             visual.SetDisplayName(IsEnglishUi && !string.IsNullOrEmpty(definition.EnglishName)
                 ? definition.EnglishName : GetStoredCardDisplayName(stored));

@@ -53,11 +53,11 @@ public sealed class CardPackStatisticsWindow : EditorWindow
     private bool onlyShowProblems;
     private bool refreshQueued;
 
-    [MenuItem("CardOpen/카드팩 자동 집계")]
+    [MenuItem("CardOpen/잎팩 자동 집계")]
     private static void OpenWindow()
     {
         CardPackStatisticsWindow window = GetWindow<CardPackStatisticsWindow>();
-        window.titleContent = new GUIContent("카드팩 집계");
+        window.titleContent = new GUIContent("잎팩 집계");
         window.minSize = new Vector2(760f, 420f);
         window.Show();
     }
@@ -205,8 +205,8 @@ public sealed class CardPackStatisticsWindow : EditorWindow
 
         EditorGUILayout.Space(6f);
         EditorGUILayout.HelpBox(
-            "카드팩 " + packSummaries.Count + "개  |  카드 에셋 " + cardSummaries.Count +
-            "개  |  봉입된 카드 " + includedCards + "개  |  미봉입 카드 " + (cardSummaries.Count - includedCards) +
+            "잎팩 " + packSummaries.Count + "개  |  잎 에셋 " + cardSummaries.Count +
+            "개  |  봉입된 잎 " + includedCards + "개  |  미봉입 잎 " + (cardSummaries.Count - includedCards) +
             "개  |  문제가 있는 팩 " + problemPacks + "개  |  유사도 경고 " + similarityWarnings.Count + "쌍",
             problemPacks > 0 ? MessageType.Warning : MessageType.Info);
     }
@@ -250,14 +250,14 @@ public sealed class CardPackStatisticsWindow : EditorWindow
             DrawPackRow(summary, i % 2 == 0);
             drewAny = true;
         }
-        if (!drewAny) EditorGUILayout.HelpBox("조건에 맞는 카드팩이 없습니다.", MessageType.None);
+        if (!drewAny) EditorGUILayout.HelpBox("조건에 맞는 잎팩이 없습니다.", MessageType.None);
     }
 
     private static void DrawPackHeader()
     {
         using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
         {
-            GUILayout.Label("카드팩", EditorStyles.boldLabel, GUILayout.MinWidth(155f));
+            GUILayout.Label("잎팩", EditorStyles.boldLabel, GUILayout.MinWidth(155f));
             GUILayout.Label("전체", EditorStyles.boldLabel, GUILayout.Width(42f));
             DrawRarityHeader("일반");
             DrawRarityHeader("고급");
@@ -294,15 +294,15 @@ public sealed class CardPackStatisticsWindow : EditorWindow
 
     private void DrawCardSection()
     {
-        showCardSummary = EditorGUILayout.Foldout(showCardSummary, "카드별 등장 팩", true, EditorStyles.foldoutHeader);
+        showCardSummary = EditorGUILayout.Foldout(showCardSummary, "잎별 등장 팩", true, EditorStyles.foldoutHeader);
         if (!showCardSummary) return;
 
         using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
         {
-            GUILayout.Label("카드", EditorStyles.boldLabel, GUILayout.MinWidth(180f));
+            GUILayout.Label("잎", EditorStyles.boldLabel, GUILayout.MinWidth(180f));
             GUILayout.Label("등급", EditorStyles.boldLabel, GUILayout.Width(54f));
             GUILayout.Label("팩 수", EditorStyles.boldLabel, GUILayout.Width(42f));
-            GUILayout.Label("등장 카드팩", EditorStyles.boldLabel, GUILayout.MinWidth(320f));
+            GUILayout.Label("등장 잎팩", EditorStyles.boldLabel, GUILayout.MinWidth(320f));
         }
 
         bool drewAny = false;
@@ -317,7 +317,7 @@ public sealed class CardPackStatisticsWindow : EditorWindow
             DrawCardRow(summary, packNames, visibleIndex++ % 2 == 0);
             drewAny = true;
         }
-        if (!drewAny) EditorGUILayout.HelpBox("조건에 맞는 카드가 없습니다.", MessageType.None);
+        if (!drewAny) EditorGUILayout.HelpBox("조건에 맞는 잎이 없습니다.", MessageType.None);
     }
 
     private static void DrawCardRow(CardSummary summary, string packNames, bool alternate)

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: TheFool
   m_EditorClassIdentifier: Assembly-CSharp::CombatCardType
   CardName: The Fool
-  Description: "\uC774 \uCE74\uB4DC\uB97C 2\uD68C \uC0AC\uC6A9\uD558\uBA74 \uCCB4\uB825\uC744
+  Description: "\uC774 \uC78E\uC744 2\uD68C \uC0AC\uC6A9\uD558\uBA74 \uCCB4\uB825\uC744
     10 \uD68C\uBCF5"
   EnglishName: The Fool
   EnglishDescription: After using this card twice, restore 10 HP.

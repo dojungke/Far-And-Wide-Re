@@ -179,10 +179,10 @@ namespace CardOpen.Prototype
                 popupIcon = hoveredRelic.Image;
                 string description = hoveredRelic.GetLocalizedDescription(IsEnglishUi);
                 effectLines.Add(string.IsNullOrEmpty(description)
-                    ? Ui("유물 효과가 적용 중입니다.", "This relic effect is active.") : description);
+                    ? Ui("가지 효과가 적용 중입니다.", "This relic effect is active.") : description);
             }
             else if (TryGetHoveredEnemyAction(screenPoint, out EnemyState actionEnemy,
-                out PlannedActionInfo actionInfo, out actionAnchor))
+                out PlannedActionInfo actionInfo, out global::CombatBuffDefinition actionBuffDefinition, out actionAnchor))
             {
                 fixedActionPopup = true;
                 if (actionInfo == PlannedActionInfo.Countdown)
@@ -190,8 +190,15 @@ namespace CardOpen.Prototype
                     if (clockTexture == null) clockTexture = Resources.Load<Texture2D>("CardAssets/Content/clock");
                     title = Ui("남은 시간", "Time Remaining");
                     popupIcon = clockTexture;
-                    effectLines.Add(Ui(actionEnemy.ActionTurnsRemaining + "턴 후에 행동하여 우측의 효과를 가합니다.",
+                    effectLines.Add(Ui(actionEnemy.ActionTurnsRemaining + "차례 후에 행동하여 우측의 효과를 가합니다.",
                         "Acts in " + actionEnemy.ActionTurnsRemaining + " turn(s), applying the effects shown to the right."));
+                }
+                else if (actionInfo == PlannedActionInfo.Buff)
+                {
+                    title = actionBuffDefinition != null
+                        ? actionBuffDefinition.GetLocalizedName(IsEnglishUi) : Ui("효과", "Effect");
+                    popupIcon = actionBuffDefinition != null ? actionBuffDefinition.Image : null;
+                    AddEffectPopupLine(effectLines, actionBuffDefinition, 0);
                 }
                 else if (actionInfo == PlannedActionInfo.Damage)
                 {
@@ -200,6 +207,35 @@ namespace CardOpen.Prototype
                     popupIcon = attackTexture;
                     effectLines.Add(Ui("행동하면 " + actionEnemy.ActionDamage + "만큼의 피해를 줍니다.",
                         "Deals " + actionEnemy.ActionDamage + " damage when this action is performed."));
+                }
+                else if (actionInfo == PlannedActionInfo.Summon)
+                {
+                    if (summonTexture == null) summonTexture = Resources.Load<Texture2D>("CardAssets/Content/Summon");
+                    title = Ui("화이리 소환", "Summon FireWolf");
+                    popupIcon = summonTexture;
+                    effectLines.Add(Ui("행동하면 화이리 1마리를 소환합니다.",
+                        "Summons one FireWolf when this action is performed."));
+                }
+                else if (actionInfo == PlannedActionInfo.HealSelf || actionInfo == PlannedActionInfo.HealAllEnemies)
+                {
+                    bool healsAll = actionInfo == PlannedActionInfo.HealAllEnemies;
+                    if (healsAll)
+                    {
+                        if (multiHealTexture == null) multiHealTexture = Resources.Load<Texture2D>("CardAssets/Content/multiheal");
+                        popupIcon = multiHealTexture;
+                    }
+                    else
+                    {
+                        if (healTexture == null) healTexture = Resources.Load<Texture2D>("CardAssets/Content/heal");
+                        popupIcon = healTexture;
+                    }
+                    int amount = healsAll ? actionEnemy.AllEnemyHealAmount : actionEnemy.SelfHealAmount;
+                    title = healsAll ? Ui("전체 회복", "Heal All Enemies") : Ui("자신 회복", "Heal Self");
+                    effectLines.Add(healsAll
+                        ? Ui("행동하면 모든 적의 체력을 " + amount + " 회복합니다.",
+                            "Restores " + amount + " HP to all enemies when this action is performed.")
+                        : Ui("행동하면 자신의 체력을 " + amount + " 회복합니다.",
+                            "Restores " + amount + " HP to itself when this action is performed."));
                 }
                 else
                 {
@@ -234,9 +270,15 @@ namespace CardOpen.Prototype
             GUIContent bodyContent = new GUIContent(body);
             float titleWidth = effectPopupTitleStyle.CalcSize(titleContent).x + (popupIcon != null ? 94f : 48f);
             float bodyWidth = effectPopupBodyStyle.CalcSize(bodyContent).x + 44f;
-            float width = Mathf.Clamp(Mathf.Max(580f, titleWidth, bodyWidth), 580f, 900f);
-            float height = 92f + effectPopupBodyStyle.CalcHeight(bodyContent, width - 48f);
-            height = Mathf.Max(height, 220f);
+            // Popup styles are authored in the 1920x1080 reference space. Convert the
+            // resulting panel size to screen pixels once, matching runtimeUiRoot's scale.
+            GetUiLayout(out float popupScale, out float popupOffsetX, out float popupOffsetY);
+            if (popupScale <= 0f) return;
+            float widthReference = Mathf.Clamp(Mathf.Max(420f, titleWidth, bodyWidth), 420f, 720f);
+            float heightReference = 78f + effectPopupBodyStyle.CalcHeight(bodyContent, widthReference - 40f);
+            heightReference = Mathf.Max(heightReference, 165f);
+            float width = widthReference * popupScale;
+            float height = heightReference * popupScale;
             bool isCardPopup = hoveredCard != null;
             float x;
             float y;
@@ -249,11 +291,10 @@ namespace CardOpen.Prototype
             else if (fixedActionPopup || fixedBuffPopup)
             {
                 Rect fixedAnchor = fixedActionPopup ? actionAnchor : buffAnchor;
-                GetUiLayout(out float actionScale, out float actionOffsetX, out float actionOffsetY);
-                x = actionOffsetX + (fixedAnchor.xMax + 12f) * actionScale;
-                y = actionOffsetY + fixedAnchor.center.y * actionScale - height * 0.5f;
+                x = popupOffsetX + (fixedAnchor.xMax + 12f) * popupScale;
+                y = popupOffsetY + fixedAnchor.center.y * popupScale - height * 0.5f;
                 if (x + width > Screen.width - 12f)
-                    x = actionOffsetX + (fixedAnchor.xMin - 12f) * actionScale - width;
+                    x = popupOffsetX + (fixedAnchor.xMin - 12f) * popupScale - width;
             }
             else
             {

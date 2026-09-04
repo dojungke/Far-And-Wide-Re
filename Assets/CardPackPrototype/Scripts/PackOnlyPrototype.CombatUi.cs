@@ -28,6 +28,8 @@ namespace CardOpen.Prototype
             // Defer resolution by one frame so one pointer release cannot also finish and start another turn.
             yield return null;
             // Resolve start-of-turn effects before an enemy can act.
+            ApplyEnemyStunAtTurnStart();
+            ApplyRegenerationAtTurnStart();
             ApplyScalesAtTurnStart();
             ApplyBleedingAtTurnStart();
             ApplyBurnAtTurnStart();
@@ -40,15 +42,17 @@ namespace CardOpen.Prototype
             {
                 EnemyState enemy = enemies[i];
                 if (enemy == null || enemy.IsDefeated) continue;
+                if (stunnedEnemyIndicesThisTurn.Contains(i)) continue;
                 if (enemy.ActionTurnsRemaining > 0) enemy.ActionTurnsRemaining--;
                 // Execute on the same enemy turn that changes the visible timer to 0.
                 if (enemy.ActionTurnsRemaining > 0)
                 {
-                    yield return new WaitForSecondsRealtime(1f);
+                    yield return new WaitForSecondsRealtime(0.5f);
                     continue;
                 }
                 ExecuteEnemyAction(enemy);
                 enemy.ActionTurnsRemaining = enemy.ActionInterval;
+                UpdateSmallWoodSoloAttackAction(enemy);
                 yield return new WaitForSecondsRealtime(1f);
                 if (playerHealth <= 0) break;
             }
@@ -58,6 +62,40 @@ namespace CardOpen.Prototype
         private void ExecuteEnemyAction(EnemyState enemy)
         {
             if (enemy == null || enemy.Definition == null) return;
+            if (enemy.HasSummonAction)
+            {
+                SummonFireWolf(enemy);
+                return;
+            }
+            if (enemy.HasSmallWoodSoloAttackAction)
+            {
+                DealPlayerDamage(10, enemy.Name + " Attack", enemy.EnglishName + " Attack");
+                return;
+            }
+            if (enemy.IsSmallStone)
+            {
+                if (enemy.SmallStoneShieldAction)
+                {
+                    enemy.Shield += 30;
+                    AddScorePopup(Ui(enemy.Name + "\n보호막 +30", enemy.EnglishName + "\nShield +30"),
+                        new Color(0.55f, 0.78f, 1f), Time.unscaledTime, scorePopups.Count, 0);
+                }
+                else
+                {
+                    string stoneKoreanSource = enemy.Name + "의 공격";
+                    string stoneEnglishSource = enemy.EnglishName + " Attack";
+                    DealPlayerDamage(10, stoneKoreanSource, stoneEnglishSource);
+                    if (playerHealth > 0)
+                        ApplyEnemyActionBuffToPlayer(GetCombatBuffDefinition("Stun"), 1, stoneKoreanSource, stoneEnglishSource);
+                }
+                enemy.SmallStoneShieldAction = !enemy.SmallStoneShieldAction;
+                return;
+            }
+            if (enemy.ClevernessActionChanged)
+            {
+                HealEnemy(enemy, enemy.SelfHealAmount, enemy.Name + "의 회복", enemy.EnglishName + " Heal");
+                return;
+            }
             string koreanSource = enemy.Name + "의 " + enemy.ActionName;
             string englishSource = enemy.EnglishName + " " + enemy.EnglishActionName;
             PlayEnemyAttackEffect(enemy);
@@ -73,8 +111,20 @@ namespace CardOpen.Prototype
             for (int i = 0; i < enemy.Definition.Abilities.Count; i++)
             {
                 global::EnemyActionAbility ability = enemy.Definition.Abilities[i];
-                if (ability == null || ability.Target != global::CombatAbilityTarget.Player) continue;
+                if (ability == null) continue;
                 int amount = Mathf.Max(0, ability.Amount);
+                if (ability.Effect == global::EnemyActionEffect.HealSelf)
+                {
+                    HealEnemy(enemy, amount, koreanSource, englishSource);
+                    continue;
+                }
+                if (ability.Effect == global::EnemyActionEffect.HealAllEnemies)
+                {
+                    for (int targetIndex = 0; targetIndex < enemies.Count; targetIndex++)
+                        HealEnemy(enemies[targetIndex], amount, koreanSource, englishSource);
+                    continue;
+                }
+                if (ability.Target != global::CombatAbilityTarget.Player) continue;
                 if (ability.Effect == global::EnemyActionEffect.Damage)
                 {
                     DealPlayerDamage(amount, koreanSource, englishSource);
@@ -85,8 +135,50 @@ namespace CardOpen.Prototype
                     ApplyEnemyActionBuffToPlayer(ability.RelatedBuff, amount, koreanSource, englishSource);
                 }
             }
+            UpdateBeastLeaderSummonAction(enemy);
         }
 
+        private void UpdateSmallWoodSoloAttackAction(EnemyState enemy)
+        {
+            if (enemy == null || !enemy.IsSmallWood || enemy.IsDefeated || enemy.HasSmallWoodSoloAttackAction) return;
+            bool hasOtherLivingEnemy = enemies.Exists(other => other != null && other != enemy && !other.IsDefeated);
+            if (!hasOtherLivingEnemy) enemy.SmallWoodSoloAttackAction = true;
+        }
+
+        private void UpdateBeastLeaderSummonAction(EnemyState enemy)
+        {
+            if (enemy == null || !enemy.IsBeastLeader || enemy.IsDefeated || enemy.HasSummonAction) return;
+            bool hasOtherLivingEnemy = enemies.Exists(other => other != null && other != enemy && !other.IsDefeated);
+            if (!hasOtherLivingEnemy) enemy.BeastLeaderSummonAction = true;
+        }
+
+        private void SummonFireWolf(EnemyState leader)
+        {
+            if (leader == null) return;
+            global::EnemyDefinition fireWolf = Resources.Load<global::EnemyDefinition>("Combat/Enemies/FireWolf");
+            if (fireWolf == null) return;
+            EnemyState summoned = CreateEnemyState(fireWolf);
+            if (summoned == null) return;
+            int defeatedIndex = enemies.FindIndex(item => item != null && item.IsDefeated);
+            if (defeatedIndex >= 0) enemies[defeatedIndex] = summoned;
+            else if (enemies.Count < MaxSimultaneousEnemies) enemies.Add(summoned);
+            else return;
+            leader.BeastLeaderSummonAction = false;
+            AddScorePopup(Ui(leader.Name + "\n화이리 소환", leader.EnglishName + "\nSummons FireWolf"),
+                new Color(1f, 0.72f, 0.35f), Time.unscaledTime, scorePopups.Count, 0);
+            RefreshEnemyVisual();
+        }
+        private void HealEnemy(EnemyState target, int amount, string koreanSource, string englishSource)
+        {
+            if (target == null || target.IsDefeated || amount <= 0) return;
+            int previousHealth = target.Health;
+            target.Health = Mathf.Min(target.MaximumHealth, target.Health + amount);
+            int recovered = target.Health - previousHealth;
+            if (recovered <= 0) return;
+            AddScorePopup(Ui(koreanSource + "\n" + target.Name + " 체력 +" + recovered,
+                englishSource + "\n" + target.EnglishName + " HP +" + recovered),
+                new Color(0.35f, 0.9f, 0.38f), Time.unscaledTime, scorePopups.Count, 0);
+        }
         private void ApplyEnemyActionBuffToPlayer(global::CombatBuffDefinition buff, int amount,
             string koreanSource, string englishSource)
         {
@@ -101,6 +193,10 @@ namespace CardOpen.Prototype
             if (buff == null || amount <= 0) return;
             if (buff == GetCombatBuffDefinition("Shield")) playerShield += amount;
             else if (buff == GetCombatBuffDefinition("Burn")) playerBurn += amount;
+            else if (buff == GetCombatBuffDefinition("Wood")) playerWood += amount;
+            else if (buff == GetCombatBuffDefinition("Regeneration")) playerRegeneration += amount;
+            else if (buff == GetCombatBuffDefinition("Stun")) playerStun += amount;
+            else if (buff == GetCombatBuffDefinition("Bind")) playerBindDuration += amount;
             else if (buff == GetCombatBuffDefinition("Scales")) playerScales += amount;
             else if (buff == GetCombatBuffDefinition("Bleeding"))
                 playerBleedingStacks.Add(amount);
@@ -109,16 +205,36 @@ namespace CardOpen.Prototype
         {
             startingHandVisible = true;
             hasPlayedCardThisTurn = false;
+            if (playerStun > 0)
+            {
+                playerStun--;
+                AddScorePopup(Ui("기절\n차례 종료", "Stunned\nTurn ends"),
+                    new Color(0.95f, 0.82f, 0.28f), Time.unscaledTime, scorePopups.Count, 0);
+                EndPlayerTurn();
+                return;
+            }
+            ApplyPlayerRegenerationAtTurnStart();
             ApplyPlayerScalesAtTurnStart();
             ApplyPlayerBleedingAtTurnStart();
             ApplyPlayerBurnAtTurnStart();
             if (playerHealth <= 0) return;
             while (cards.Count < StartingHandSize && DrawStarterCardToHand()) { }
+            if (playerBindDuration > 0) playerBindDuration--;
             EnsurePlayableCombatCardAtTurnStart();
             LayoutUsedCardPile();
             LayoutStartingHand();
             RefreshHandCardInteractionStates();
             combatTurn++;
+        }
+        private void ApplyPlayerRegenerationAtTurnStart()
+        {
+            if (playerRegeneration <= 0 || playerHealth <= 0) return;
+            int before = playerHealth;
+            playerHealth = Mathf.Min(PlayerMaximumHealth, playerHealth + playerRegeneration);
+            int recovered = playerHealth - before;
+            if (recovered > 0)
+                AddScorePopup(Ui("재생\n체력 +" + recovered, "Regeneration\nHP +" + recovered),
+                    new Color(0.4f, 1f, 0.58f), Time.unscaledTime, scorePopups.Count, 0);
         }
         private void ApplyPlayerScalesAtTurnStart()
         {
@@ -128,8 +244,15 @@ namespace CardOpen.Prototype
         {
             if (playerBurn <= 0) return;
             int damage = playerBurn;
-            playerBurn /= 2;
             DealPlayerDamage(damage, "화상", "Burn");
+            if (playerHealth <= 0) return;
+            if (playerWood > 0)
+            {
+                playerBurn += 6;
+                playerWood--;
+            }
+            else
+                playerBurn /= 2;
         }
         private void ApplyPlayerBleedingAtTurnStart()
         {
@@ -155,7 +278,12 @@ namespace CardOpen.Prototype
                 : Ui(koreanSource + "\n피해 " + healthDamage, englishSource + "\nDamage " + healthDamage);
             AddScorePopup(damageText,
                 new Color(1f, 0.38f, 0.34f), Time.unscaledTime, scorePopups.Count, 0);
-            if (playerHealth <= 0) phase = RevealPhase.GameOver;
+            if (playerHealth <= 0)
+            {
+                ResetRelicTurnState();
+                startingHandVisible = false;
+                phase = RevealPhase.GameOver;
+            }
         }
         private void TriggerPlayerDamageFlash()
         {
@@ -192,7 +320,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
             {
                 if (canvasContextTitle == null) GUI.Label(new Rect(0f, 40f, UiReferenceWidth, 54f), Ui("전투 보상", "Combat Reward"), deckRarityStyle);
                 if (canvasContextMessage == null) GUI.Label(new Rect(0f, 92f, UiReferenceWidth, 34f),
-                    Ui("카드를 위로 드래그해 보상을 받고, 버린 카드 더미로 드래그해 거절하세요.",
+                    Ui("잎를 위로 드래그해 보상을 받고, 버린 잎 더미로 드래그해 거절하세요.",
                         "Drag the card upward to claim it, or drag it to the discard pile to decline."), discardMessageStyle);
                 GUI.matrix = previousMatrix;
                 return;
@@ -201,7 +329,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
             {
                 if (canvasContextTitle == null) GUI.Label(new Rect(0f, 40f, UiReferenceWidth, 54f), Ui("상점", "Shop"), deckRarityStyle);
                 if (canvasContextMessage == null) GUI.Label(new Rect(0f, 92f, UiReferenceWidth, 34f),
-                    Ui("카드를 위로 드래그해 구매하세요.", "Drag a card upward to purchase it."), discardMessageStyle);
+                    Ui("잎를 위로 드래그해 구매하세요.", "Drag a card upward to purchase it."), discardMessageStyle);
                 if (canvasLeaveShopButton == null && !discardPileHovered && GUI.Button(new Rect(UiReferenceWidth - 214f, 430f, 190f, 48f),
                     Ui("상점 나가기", "Leave Shop"), discardButtonStyle))
                     ResolveOffer(false);
@@ -212,7 +340,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
                 OpenCombatDeckInspection();
             GUI.enabled = canEndTurn;
             if (canvasEndTurnButton == null && !discardPileHovered
-                && GUI.Button(new Rect(UiReferenceWidth - 214f, 430f, 190f, 48f), Ui("턴 종료", "End Turn"), discardButtonStyle))
+                && GUI.Button(new Rect(UiReferenceWidth - 214f, 430f, 190f, 48f), Ui("차례 종료", "End Turn"), discardButtonStyle))
                 EndPlayerTurn();
             GUI.enabled = true;
             GUI.matrix = previousMatrix;
@@ -407,10 +535,10 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
                 new Vector2(-tabOffset, 0f), Ui(stageDeckInspectionMode ? "덱 확인" : "덱", stageDeckInspectionMode ? "Stage Deck" : "Deck"),
                 () => SelectCombatDeckInspectionTarget(CombatDeckInspectionTarget.Deck));
             CreateDeckToolbarButton("Discard Tab", combatDeckInspectionToolbarRoot.transform, new Vector2(0.5f, 1f),
-                Vector2.zero, Ui("버린 카드", "Discard"),
+                Vector2.zero, Ui("버린 잎", "Discard"),
                 () => SelectCombatDeckInspectionTarget(CombatDeckInspectionTarget.Discard));
             CreateDeckToolbarButton("Draw Tab", combatDeckInspectionToolbarRoot.transform, new Vector2(0.5f, 1f),
-                new Vector2(tabOffset, 0f), Ui("뽑을 카드", "Draw pile"),
+                new Vector2(tabOffset, 0f), Ui("뽑을 잎", "Draw pile"),
                 () => SelectCombatDeckInspectionTarget(CombatDeckInspectionTarget.DrawPile));
             GameObject empty = new GameObject("Empty Message", typeof(RectTransform), typeof(TextMeshProUGUI));
             empty.transform.SetParent(combatDeckInspectionToolbarRoot.transform, false);
@@ -439,13 +567,13 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
             if (!combatDeckInspectionToolbarRoot.activeSelf) return;
             combatDeckInspectionEmptyLabel.gameObject.SetActive(combatDeckInspectionVisuals.Count == 0);
             if (combatDeckInspectionEmptyLabel.gameObject.activeSelf)
-                combatDeckInspectionEmptyLabel.text = Ui("표시할 카드가 없습니다.", "No cards to display.");
+                combatDeckInspectionEmptyLabel.text = Ui("표시할 잎가 없습니다.", "No cards to display.");
             SetDeckToolbarTab("Deck Tab", combatDeckInspectionTarget == CombatDeckInspectionTarget.Deck,
                 Ui(stageDeckInspectionMode ? "덱 확인" : "덱", stageDeckInspectionMode ? "Stage Deck" : "Deck"));
             SetDeckToolbarTab("Discard Tab", combatDeckInspectionTarget == CombatDeckInspectionTarget.Discard,
-                Ui("버린 카드", "Discard"));
+                Ui("버린 잎", "Discard"));
             SetDeckToolbarTab("Draw Tab", combatDeckInspectionTarget == CombatDeckInspectionTarget.DrawPile,
-                Ui("뽑을 카드", "Draw pile"));
+                Ui("뽑을 잎", "Draw pile"));
         }
         private void SetDeckToolbarTab(string nodeName, bool active, string title)
         {
@@ -924,6 +1052,9 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
                 clockTexture = Resources.Load<Texture2D>("CardAssets/Content/clock");
                 attackTexture = Resources.Load<Texture2D>("CardAssets/Content/attack");
                 bleedingTexture = Resources.Load<Texture2D>("CardAssets/Content/Bleeding");
+                healTexture = Resources.Load<Texture2D>("CardAssets/Content/heal");
+                multiHealTexture = Resources.Load<Texture2D>("CardAssets/Content/multiheal");
+                summonTexture = Resources.Load<Texture2D>("CardAssets/Content/Summon");
                 combatVisualAssetsLoaded = true;
             }
             Camera camera = Camera.main;
@@ -957,14 +1088,22 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
                 float barWidth = IsPortraitUi ? 170f : 180f;
                 float depth = camera.WorldToScreenPoint(visual.transform.position).z;
                 float ratio = enemy.MaximumHealth > 0 ? (float)enemy.Health / enemy.MaximumHealth : 0f;
-                GetEnemyActionUiPositions(enemy, x, width, out float countdownX, out float damageX, out float bleedingX);
+                GetEnemyActionUiPositions(enemy, x, width, out float countdownX, out float damageX, out float healX, out float bleedingX);
+                int selfHeal = enemy.Definition != null
+                    ? enemy.SelfHealAmount : 0;
+                int allHeal = enemy.Definition != null
+                    ? enemy.AllEnemyHealAmount : 0;
+                bool hasDamage = enemy.ActionDamage > 0;
+                int fallbackAmount = hasDamage ? enemy.ActionDamage : Mathf.Max(selfHeal, allHeal);
+                Texture2D fallbackTexture = hasDamage ? attackTexture : (enemy.HasSummonAction ? summonTexture : (allHeal > 0 ? multiHealTexture : healTexture));
+                float fallbackX = hasDamage ? damageX : healX;
                 visual.UpdateCombatStatus(font, IsEnglishUi ? enemy.EnglishName : enemy.Name,
-                    enemy.ActionTurnsRemaining.ToString(), enemy.ActionDamage.ToString(), "0",
+                    enemy.ActionTurnsRemaining.ToString(), fallbackAmount.ToString(), "0",
                     enemy.Health.ToString("N0") + " / " + enemy.MaximumHealth.ToString("N0"), ratio, enemy.IsDefeated,
-                    clockTexture, attackTexture, bleedingTexture,
+                    clockTexture, fallbackTexture, bleedingTexture,
                     CombatUiToWorld(camera, new Vector2(x + width * 0.5f, 132f + topY), scale, offsetX, offsetY, depth),
                     CombatUiToWorld(camera, new Vector2(countdownX, 174f + topY), scale, offsetX, offsetY, depth),
-                    CombatUiToWorld(camera, new Vector2(float.IsNaN(damageX) ? x + width * 0.5f : damageX, 174f + topY), scale, offsetX, offsetY, depth),
+                    CombatUiToWorld(camera, new Vector2(float.IsNaN(fallbackX) ? x + width * 0.5f : fallbackX, 174f + topY), scale, offsetX, offsetY, depth),
                     CombatUiToWorld(camera, new Vector2(float.IsNaN(bleedingX) ? x + width * 0.5f : bleedingX, 174f + topY), scale, offsetX, offsetY, depth),
                     CombatUiToWorld(camera, new Vector2(x + width * 0.5f, 299f + topY), scale, offsetX, offsetY, depth),
                     CombatUiSizeToWorld(camera, new Vector2(iconPixels, iconPixels), scale, offsetX, offsetY, depth),
@@ -1009,7 +1148,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
 
                 float x = GetEnemyUiX(i);
                 float width = IsPortraitUi ? 220f : 240f;
-                GetEnemyActionUiPositions(enemy, x, width, out _, out _, out float buffStartX);
+                GetEnemyActionUiPositions(enemy, x, width, out _, out _, out _, out float buffStartX);
                 float depth = camera.WorldToScreenPoint(CardHome).z;
                 Vector3 first = CombatUiToWorld(camera, new Vector2(buffStartX, 174f + topY),
                     scale, offsetX, offsetY, depth);
@@ -1032,6 +1171,9 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
                 EnemyState enemy = enemies[i];
                 stateHash = stateHash * 31 + (enemy != null ? enemy.Shield : 0);
                 stateHash = stateHash * 31 + (enemy != null ? enemy.Burn : 0);
+                stateHash = stateHash * 31 + (enemy != null ? enemy.Wood : 0);
+                stateHash = stateHash * 31 + (enemy != null ? enemy.Regeneration : 0);
+                stateHash = stateHash * 31 + (enemy != null ? enemy.Stun : 0);
                 stateHash = stateHash * 31 + (enemy != null ? enemy.Scales : 0);
                 stateHash = stateHash * 31 + (enemy != null ? enemy.BleedingDurations.Count : 0);
                 if (enemy != null)
@@ -1039,6 +1181,10 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
             }
             stateHash = stateHash * 31 + playerShield;
             stateHash = stateHash * 31 + playerBurn;
+            stateHash = stateHash * 31 + playerWood;
+            stateHash = stateHash * 31 + playerRegeneration;
+            stateHash = stateHash * 31 + playerStun;
+            stateHash = stateHash * 31 + playerBindDuration;
             stateHash = stateHash * 31 + playerScales;
             for (int stack = 0; stack < playerBleedingStacks.Count; stack++) stateHash = stateHash * 31 + playerBleedingStacks[stack];
             if (stateHash == combatBuffVisualHash) return;
@@ -1058,6 +1204,10 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
                 if (!stageSelectionVisible && enemy != null && !enemy.IsDefeated)
                 {
                     if (enemy.Burn > 0) enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Burn"), enemy.Burn));
+                    if (enemy.Wood > 0) enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Wood"), enemy.Wood));
+                    if (enemy.Regeneration > 0) enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Regeneration"), enemy.Regeneration));
+                    if (enemy.Stun > 0) enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Stun"), enemy.Stun));
+                    if (enemy.Cleverness > 0) enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Cleverness"), enemy.Cleverness));
                     if (enemy.Scales > 0) enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Scales"), enemy.Scales));
                     for (int stack = 0; stack < enemy.BleedingDurations.Count; stack++)
                         enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Bleeding"), enemy.BleedingDurations[stack]));
@@ -1074,6 +1224,10 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
             }
             playerBuffEntries.Clear();
             if (playerBurn > 0) playerBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Burn"), playerBurn));
+            if (playerWood > 0) playerBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Wood"), playerWood));
+            if (playerRegeneration > 0) playerBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Regeneration"), playerRegeneration));
+            if (playerStun > 0) playerBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Stun"), playerStun));
+            if (playerBindDuration > 0) playerBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Bind"), playerBindDuration));
             if (playerScales > 0) playerBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Scales"), playerScales));
             for (int stack = 0; stack < playerBleedingStacks.Count; stack++)
                 playerBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Bleeding"), playerBleedingStacks[stack]));
@@ -1094,7 +1248,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
         {
             if (canvasRelicList != null) return;
             int stateHash = Screen.width * 397 ^ Screen.height * 17 ^ uiLanguage
-                ^ (stageSelectionVisible ? 1 : 0) ^ relicDamagePercentThisTurn ^ gold;
+                ^ (stageSelectionVisible ? 1 : 0) ^ relicDamageBonusThisTurn ^ gold;
             for (int i = 0; i < ownedRelics.Count; i++)
                 stateHash = stateHash * 31 + (ownedRelics[i] != null ? ownedRelics[i].GetInstanceID() : 0);
             if (stateHash == combatRelicVisualHash) return;
@@ -1116,7 +1270,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
                     global::CombatRelicDefinition relic = ownedRelics[i];
                     if (relic == null) continue;
                     int amount = relic.Effect == global::CombatRelicEffect.CardUseDamagePercent
-                        ? relicDamagePercentThisTurn : relic.Amount;
+                        ? relicDamageBonusThisTurn : relic.Amount;
                     playerRelicEntries.Add(new CombatRelicListVisual.Entry(relic, amount));
                 }
             }
@@ -1137,30 +1291,46 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
         private void EnsureCombatPlayerCharacter()
         {
             if (combatPlayerCharacter != null) return;
-            Texture2D texture = Resources.Load<Texture2D>("Textures/StageSelectionCharacterFront");
-            if (texture == null)
+            Texture2D normalTexture = Resources.Load<Texture2D>("Textures/StageSelectionCharacterFront");
+            Texture2D stunnedTexture = Resources.Load<Texture2D>("Textures/CombatPlayerStunned");
+            if (normalTexture == null)
             {
                 Debug.LogWarning("Textures/StageSelectionCharacterFront could not be loaded.");
                 return;
             }
+            combatPlayerNormalSprite = Sprite.Create(normalTexture,
+                new Rect(0f, 0f, normalTexture.width, normalTexture.height), new Vector2(0.5f, 0.5f), 100f);
+            if (stunnedTexture != null)
+                combatPlayerStunnedSprite = Sprite.Create(stunnedTexture,
+                    new Rect(0f, 0f, stunnedTexture.width, stunnedTexture.height), new Vector2(0.5f, 0.5f), 100f);
+            else
+                Debug.LogWarning("Textures/CombatPlayerStunned could not be loaded.");
             combatPlayerCharacter = new GameObject("Combat Player Character (Behind Health Bar)");
             combatPlayerCharacterRenderer = combatPlayerCharacter.AddComponent<SpriteRenderer>();
-            combatPlayerCharacterRenderer.sprite = Sprite.Create(texture,
-                new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), 100f);
+            combatPlayerCharacterRenderer.sprite = combatPlayerNormalSprite;
+        }
+
+        private void UpdateCombatPlayerCharacterSprite()
+        {
+            if (combatPlayerCharacterRenderer == null) return;
+            Sprite desiredSprite = playerStun > 0 && combatPlayerStunnedSprite != null
+                ? combatPlayerStunnedSprite : combatPlayerNormalSprite;
+            if (desiredSprite != null && combatPlayerCharacterRenderer.sprite != desiredSprite)
+                combatPlayerCharacterRenderer.sprite = desiredSprite;
         }
 
         private void ShowPlayerCharacterInCombat()
         {
             EnsureCombatPlayerCharacter();
             if (combatPlayerCharacter == null || combatPlayerCharacterRenderer == null) return;
+            UpdateCombatPlayerCharacterSprite();
             combatPlayerCharacter.SetActive(true);
             combatPlayerCharacter.transform.position = new Vector3(-5.5f, -3.2f, 0.18f);
             combatPlayerCharacter.transform.rotation = Quaternion.identity;
             combatPlayerCharacter.transform.localScale = Vector3.one * 0.7f;
             // The character stays behind player status UI and all hand cards.
             combatPlayerCharacterRenderer.sortingOrder = 1500;
-        }
-        private void DrawPlayerHealthAndBuffs(float scale, float offsetX, float offsetY)
+        }        private void DrawPlayerHealthAndBuffs(float scale, float offsetX, float offsetY)
         {
             if (Event.current.type != EventType.Repaint) return;
             if (stageSelectionVisible || shopChoiceActive || inspectedDeckIndex >= 0 || combatDeckInspectionDetailCard != null || usedPileDetailCard != null)
@@ -1391,7 +1561,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
             Matrix4x4 previousMatrix = GUI.matrix;
             GUI.matrix = Matrix4x4.TRS(new Vector3(offsetX, offsetY, 0f), Quaternion.identity,
                 new Vector3(scale, scale, 1f));
-            string packContentsTitle = Ui("봉입 카드 (" + cardsPerPack + "장입)",
+            string packContentsTitle = Ui("봉입 잎 (" + cardsPerPack + "장입)",
                 "Included cards (" + cardsPerPack + (cardsPerPack == 1 ? " card)" : " cards)"));
             GUI.Label(UiRect(new Rect(390f, 28f, 500f, 52f), new Rect(110f, 28f, 500f, 52f)),
                 packContentsTitle, packContentsTitleStyle);
@@ -1502,30 +1672,38 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
             int goalIndex = Mathf.Clamp(currentGoalIndex, 0, GoalScores.Length - 1);
             int targetScore = GoalScores[goalIndex];
             int reachedStage = cleared ? GoalScores.Length : Mathf.Clamp(currentGoalIndex + 1, 1, GoalScores.Length);
-            string title = cleared ? Ui("\uB7F0 \uD074\uB9AC\uC5B4!", "RUN CLEARED!") : Ui("\uAC8C\uC784 \uC624\uBC84", "GAME OVER");
+            bool defeated = !sharedResultMode && playerHealth <= 0;
+            string title = cleared ? Ui("런 클리어!", "RUN CLEARED!") : Ui("도전 실패", "CHALLENGE FAILED");
             string resultMessage = cleared
-                ? Ui("\uBAA8\uB4E0 \uBAA9\uD45C\uB97C \uB2EC\uC131\uD588\uC2B5\uB2C8\uB2E4.", "All goals cleared.")
-                : Ui("\uBAA9\uD45C \uC810\uC218\uC5D0 \uB3C4\uB2EC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.", "Goal score not reached.");
+                ? Ui("모든 목표를 달성했습니다.", "All goals cleared.")
+                : challengeAbandoned
+                    ? Ui("도전을 포기하였습니다.", "The challenge was abandoned.")
+                    : defeated
+                        ? Ui("체력이 0이되어 패배 하였습니다.", "You were defeated because your health reached 0.")
+                        : Ui("이번 라운드에서 목표 점수를 달성하지 못했습니다.", "The goal score was not reached this round.");
             string roundValue = cleared
-                ? Ui("\uC644\uB8CC", "CLEAR")
+                ? Ui("완료", "CLEAR")
                 : roundScore.ToString("N0") + " / " + targetScore.ToString("N0");
-            if (sharedResultMode)
+            if (sharedResultMode && cleared)
                 GUI.Label(UiRect(new Rect(450f, 58f, 380f, 32f), new Rect(190f, 292f, 340f, 36f)),
-                    Ui("\uACF5\uC720\uBC1B\uC740 \uACB0\uACFC", "SHARED RESULT"), runEndBadgeStyle);
+                    Ui("공유받은 결과", "SHARED RESULT"), runEndBadgeStyle);
             GUI.Label(UiRect(new Rect(320f, 88f, 640f, 70f), new Rect(90f, 330f, 540f, 82f)), title, runEndTitleStyle);
             GUI.Label(UiRect(new Rect(340f, 154f, 600f, 42f), new Rect(90f, 410f, 540f, 48f)), resultMessage, runEndBodyStyle);
-            GUI.Label(UiRect(new Rect(320f, 212f, 200f, 30f), new Rect(80f, 485f, 180f, 32f)), Ui("\uCD1D\uC810", "TOTAL SCORE"), runEndStatLabelStyle);
-            GUI.Label(UiRect(new Rect(540f, 212f, 200f, 30f), new Rect(270f, 485f, 180f, 32f)), Ui("\uB3C4\uB2EC \uB2E8\uACC4", "STAGE"), runEndStatLabelStyle);
-            GUI.Label(UiRect(new Rect(760f, 212f, 200f, 30f), new Rect(460f, 485f, 180f, 32f)), Ui("\uAC1C\uBD09 \uD329", "PACKS"), runEndStatLabelStyle);
-            GUI.Label(UiRect(new Rect(320f, 242f, 200f, 48f), new Rect(80f, 520f, 180f, 48f)), totalScore.ToString("N0"), runEndStatValueStyle);
-            GUI.Label(UiRect(new Rect(540f, 242f, 200f, 48f), new Rect(270f, 520f, 180f, 48f)), reachedStage + " / " + GoalScores.Length, runEndStatValueStyle);
-            GUI.Label(UiRect(new Rect(760f, 242f, 200f, 48f), new Rect(460f, 520f, 180f, 48f)), completedPacks.ToString("N0"), runEndStatValueStyle);
-            GUI.Label(UiRect(new Rect(335f, 300f, 610f, 42f), new Rect(80f, 585f, 560f, 62f)),
-                Ui("\uB77C\uC6B4\uB4DC \uC810\uC218  ", "ROUND SCORE  ") + roundValue, runEndBodyStyle);
-            GUI.Label(UiRect(new Rect(335f, 340f, 610f, 32f), new Rect(80f, 650f, 560f, 54f)),
-                Ui("\uC544\uB798 \uB371 \uCE74\uB4DC\uB97C \uB20C\uB7EC \uC0C1\uC138\uD788 \uBCFC \uC218 \uC788\uC5B4\uC694.", "Select a deck card below to inspect it."), runEndHintStyle);
+            if (cleared)
+            {
+                GUI.Label(UiRect(new Rect(320f, 212f, 200f, 30f), new Rect(80f, 485f, 180f, 32f)), Ui("총점", "TOTAL SCORE"), runEndStatLabelStyle);
+                GUI.Label(UiRect(new Rect(540f, 212f, 200f, 30f), new Rect(270f, 485f, 180f, 32f)), Ui("도달 단계", "STAGE"), runEndStatLabelStyle);
+                GUI.Label(UiRect(new Rect(760f, 212f, 200f, 30f), new Rect(460f, 485f, 180f, 32f)), Ui("개봉 팩", "PACKS"), runEndStatLabelStyle);
+                GUI.Label(UiRect(new Rect(320f, 242f, 200f, 48f), new Rect(80f, 520f, 180f, 48f)), totalScore.ToString("N0"), runEndStatValueStyle);
+                GUI.Label(UiRect(new Rect(540f, 242f, 200f, 48f), new Rect(270f, 520f, 180f, 48f)), reachedStage + " / " + GoalScores.Length, runEndStatValueStyle);
+                GUI.Label(UiRect(new Rect(760f, 242f, 200f, 48f), new Rect(460f, 520f, 180f, 48f)), completedPacks.ToString("N0"), runEndStatValueStyle);
+                GUI.Label(UiRect(new Rect(335f, 300f, 610f, 42f), new Rect(80f, 585f, 560f, 62f)),
+                    Ui("라운드 점수  ", "ROUND SCORE  ") + roundValue, runEndBodyStyle);
+                GUI.Label(UiRect(new Rect(335f, 340f, 610f, 32f), new Rect(80f, 650f, 560f, 54f)),
+                    Ui("아래 덱 카드를 눌러 상세히 볼 수 있어요.", "Select a deck card below to inspect it."), runEndHintStyle);
+            }
             Rect leftButtonRect = UiRect(new Rect(360f, 400f, 260f, 70f), new Rect(90f, 755f, 250f, 76f));
-            Rect rightButtonRect = UiRect(new Rect(660f, 400f, 260f, 70f), new Rect(380f, 755f, 250f, 76f));
+            Rect rightButtonRect = sharedResultMode ? UiRect(new Rect(660f, 400f, 260f, 70f), new Rect(380f, 755f, 250f, 76f)) : UiRect(new Rect(510f, 400f, 260f, 70f), new Rect(235f, 755f, 250f, 76f));
             if (sharedResultMode)
             {
                 if (GUI.Button(leftButtonRect, Ui("\uD329 \uAE4C\uBCF4\uAE30", "Open a Pack"), runEndButtonStyle))
@@ -1539,9 +1717,9 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
             }
             else
             {
-                if (GUI.Button(leftButtonRect, Ui("\uACF5\uC720", "Share"), runEndButtonStyle))
-                    ShareCurrentResult();
-                if (GUI.Button(rightButtonRect, Ui("\uB2E4\uC2DC \uC2DC\uC791", "Restart"), runEndButtonStyle))
+
+
+                if (GUI.Button(rightButtonRect, Ui("다시 도전", "Try Again"), runEndButtonStyle))
                     StartNewRun();
             }
             if (!sharedResultMode && !string.IsNullOrEmpty(shareFeedback) && Time.unscaledTime < shareFeedbackUntil)
@@ -1678,7 +1856,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
         }
         private string GetInheritedRelicShortName(StoredCard relic)
         {
-            if (relic == null || relic.Data == null) return Ui("조립 유물", "Relic");
+            if (relic == null || relic.Data == null) return Ui("조립 가지", "Relic");
             return relic.Data.GetLocalizedShortStatusName(IsEnglishUi);
         }
         private static void DrawStatusLabelWithShadow(Rect rect, string text, GUIStyle style, Color color)
@@ -1928,7 +2106,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
             Rect headerRect = IsPortraitUi
                 ? new Rect(0f, 975f + PortraitExtraHeight, 190f, 42f)
                 : new Rect(0f, 516f, 220f, 34f);
-            GUI.Label(headerRect, Ui("사용한 카드 더미", "Used card pile"), deckHeaderStyle);
+            GUI.Label(headerRect, Ui("사용한 잎 더미", "Used card pile"), deckHeaderStyle);
             GUI.matrix = previousMatrix;
         }
     }

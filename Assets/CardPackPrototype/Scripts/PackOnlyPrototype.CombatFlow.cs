@@ -98,6 +98,8 @@ namespace CardOpen.Prototype
                 Health = Mathf.Max(1, definition.MaximumHealth),
                 Shield = 0,
                 Burn = 0,
+                Regeneration = 0,
+                Stun = 0,
                 Scales = 0,
                 ActionTurnsRemaining = Mathf.Max(1, definition.ActionInterval)
             };
@@ -120,6 +122,10 @@ namespace CardOpen.Prototype
             if (enemy == null || buff == null || amount <= 0) return;
             if (buff == GetCombatBuffDefinition("Shield")) enemy.Shield += amount;
             else if (buff == GetCombatBuffDefinition("Burn")) enemy.Burn += amount;
+            else if (buff == GetCombatBuffDefinition("Wood")) enemy.Wood += amount;
+            else if (buff == GetCombatBuffDefinition("Regeneration")) enemy.Regeneration += amount;
+            else if (buff == GetCombatBuffDefinition("Stun")) enemy.Stun += amount;
+            else if (buff == GetCombatBuffDefinition("Cleverness")) enemy.Cleverness += amount;
             else if (buff == GetCombatBuffDefinition("Scales")) enemy.Scales += amount;
             else if (buff == GetCombatBuffDefinition("Bleeding"))
                 enemy.BleedingDurations.Add(amount);
@@ -153,11 +159,14 @@ namespace CardOpen.Prototype
                     if (state != null) enemies.Add(state);
                 }
             }
-            playerHealth = PlayerMaximumHealth;
+
             ClearPlayerCombatBuffs();
         }
         private void BeginGoldRewardChoice()
         {
+            shopRewardOpeningActive = false;
+            pendingShopRewardOffer = null;
+            shopRewardCards.Clear();
             int minimumGold = 50;
             int maximumGoldExclusive = 151;
             if (lastUsedStageCard != null && lastUsedStageCard.Kind == global::StageCardKind.EliteBattle)
@@ -180,6 +189,9 @@ namespace CardOpen.Prototype
 
         private void BeginShopChoice()
         {
+            shopRewardOpeningActive = false;
+            pendingShopRewardOffer = null;
+            shopRewardCards.Clear();
             if (shopOfferDrawPending)
             {
                 while (shopOffers.Count < 4) shopOffers.Add(CreateShopOffer());
@@ -195,7 +207,7 @@ namespace CardOpen.Prototype
                 usedPilePlaceholderData.Description = discardDescription;
                 usedPilePlaceholder.SetDisplayDescription(usedPilePlaceholderData, discardDescription, IsEnglishUi, string.Empty);
             }
-            AddOfferCard(Ui("덱 카드 제거", "Remove Deck Card"), Ui(shopDeckRemovalPrice + " 골드\n덱 카드 1장을 제거합니다.", shopDeckRemovalPrice + " gold\nRemove one deck card."), -1, global::CardColor.Black, 1);
+            AddOfferCard(Ui("덱 잎 제거", "Remove Deck Card"), Ui(shopDeckRemovalPrice + " 골드\n덱 잎 1장을 제거합니다.", shopDeckRemovalPrice + " gold\nRemove one deck card."), -1, global::CardColor.Black, 1);
             for (int i = 0; i < shopOffers.Count; i++)
             {
                 ShopOffer offer = shopOffers[i];
@@ -211,7 +223,7 @@ namespace CardOpen.Prototype
             global::CombatRelicDefinition relic = UnityEngine.Random.value < 0.5f ? DrawShopRelic(rarityTier) : null;
             global::CombatCard card = relic == null ? DrawShopCombatCard(rarityTier) : null;
             if (card == null && relic == null) relic = DrawShopRelic(rarityTier);
-            ShopOffer offer = new ShopOffer { RarityTier = rarityTier, ChoiceCount = choiceCount, RemainingSalesPeriods = 5, Card = card, Relic = relic, Number = card != null ? card.Number : 1 };
+            ShopOffer offer = new ShopOffer { RarityTier = rarityTier, ChoiceCount = choiceCount, RemainingSalesPeriods = UnityEngine.Random.Range(1, 6), Card = card, Relic = relic, Number = card != null ? card.Number : 1 };
             offer.Price = offer.IsRelic ? (priceRarityTier + 1) * 100 + UnityEngine.Random.Range(choiceCount, choiceCount + 5) * 10 : ((int)Mathf.Pow(priceRarityTier + 1, UnityEngine.Random.Range(2, 4)) + UnityEngine.Random.Range(1, 8 + choiceCount)) * 10;
             return offer;
         }
@@ -229,13 +241,23 @@ namespace CardOpen.Prototype
             List<global::CombatCardType> candidates = new List<global::CombatCardType>();
             for (int i = 0; i < allTypes.Length; i++) if (allTypes[i] != null && allTypes[i].CanAppearInShopRewardPack) candidates.Add(allTypes[i]);
             global::CombatCardType type = DrawShopItemByRarity(candidates, rarityTier, item => item.Rarity);
-            return type == null ? null : new global::CombatCard { Type = type, Color = (global::CardColor)UnityEngine.Random.Range(0, 3), Number = UnityEngine.Random.Range(1, 6) };
+            return CreateRandomShopLeaf(type);
+        }
+        private static global::CombatCard CreateRandomShopLeaf(global::CombatCardType type)
+        {
+            if (type == null) return null;
+            return new global::CombatCard
+            {
+                Type = type,
+                Color = (global::CardColor)UnityEngine.Random.Range(0, 5),
+                Number = UnityEngine.Random.Range(1, 7)
+            };
         }
         private global::CombatRelicDefinition DrawShopRelic(int rarityTier)
         {
             global::CombatRelicDefinition[] allRelics = Resources.LoadAll<global::CombatRelicDefinition>("Combat/Relics");
             List<global::CombatRelicDefinition> candidates = new List<global::CombatRelicDefinition>();
-            for (int i = 0; i < allRelics.Length; i++) if (allRelics[i] != null && allRelics[i].CanAppearInShopRewardPack && allRelics[i] != GetGoldCurrencyDefinition() && !ownedRelics.Contains(allRelics[i]) && !shopOffers.Exists(offer => offer.Relic == allRelics[i])) candidates.Add(allRelics[i]);
+            for (int i = 0; i < allRelics.Length; i++) if (allRelics[i] != null && allRelics[i].CanAppearInShopRewardPack && allRelics[i] != GetGoldCurrencyDefinition() && !shopOffers.Exists(offer => offer.Relic == allRelics[i])) candidates.Add(allRelics[i]);
             return DrawShopItemByRarity(candidates, rarityTier, item => item.Rarity);
         }
         private static T DrawShopItemByRarity<T>(IList<T> items, int tier, Func<T, global::CardRarity> rarityOf) where T : class
@@ -259,8 +281,8 @@ namespace CardOpen.Prototype
             string rarity = GetShopRarityName(offer.RarityTier);
             int count = Mathf.Max(1, offer.ChoiceCount);
             return offer.IsRelic
-                ? Ui(rarity + " 등급 유물 " + count + "개 중 1개를 획득합니다.\n가격: " + offer.Price + " 골드", rarity + " relics: choose 1 of " + count + ".\nPrice: " + offer.Price + " gold")
-                : Ui(rarity + " 등급 카드 " + count + "장 중 1장을 획득합니다.\n가격: " + offer.Price + " 골드", rarity + " cards: choose 1 of " + count + ".\nPrice: " + offer.Price + " gold");
+                ? Ui(rarity + " 등급 가지 " + count + "개 중 1개를 획득합니다.\n가격: " + offer.Price + " 골드", rarity + " relics: choose 1 of " + count + ".\nPrice: " + offer.Price + " gold")
+                : Ui(rarity + " 등급 잎 " + count + "장 중 1장을 획득합니다.\n가격: " + offer.Price + " 골드", rarity + " cards: choose 1 of " + count + ".\nPrice: " + offer.Price + " gold");
         }
         private string GetShopRarityName(int tier)
         {
@@ -333,7 +355,7 @@ namespace CardOpen.Prototype
             CardVisual visual = CardVisual.CreatePrefabInstance("Offer Card - " + title, cardStack);
             Texture2D illustration = data.Image != null ? data.Image : Resources.Load<Texture2D>("CardAssets/Content/Mana");
             string attributeKey = color.ToString();
-            visual.BuildFromData(data, color, GetTextureMaterial("OfferAttribute_" + attributeKey, "CardAssets/Attributes/Attribute" + attributeKey, false), GetTextureMaterial("CardBack", "CardAssets/Attributes/AttributeBackRemasterPurple", false), GetTextureMaterial("OfferPattern_" + data.RarityAssetKey, "CardAssets/Rarities/Pattern" + data.RarityAssetKey, true, 0), GetTextureMaterial("OfferImage_" + data.GetHashCode(), illustration, true, 10), GetTextureMaterial(remainingSalesPeriods >= 0 ? "OfferClock" : "OfferCost", remainingSalesPeriods >= 0 ? "CardAssets/Costs/CostClock" : "CardAssets/Costs/Cost" + number, true, 20), font, IsEnglishUi);
+            visual.BuildFromData(data, color, GetTextureMaterial("OfferAttribute_" + attributeKey, "CardAssets/Attributes/Attribute" + attributeKey, false), GetTextureMaterial("CardBack", "CardAssets/Attributes/AttributeBackRemasterPurple", false), GetTextureMaterial("OfferPattern_" + data.RarityAssetKey, "CardAssets/Rarities/Pattern" + data.RarityAssetKey, true, 0), GetTextureMaterial("OfferImage_" + data.GetHashCode(), illustration, true, 10), GetTextureMaterial(remainingSalesPeriods >= 0 ? "OfferClock" : "OfferCost_" + number, remainingSalesPeriods >= 0 ? "CardAssets/Costs/CostClock" : "CardAssets/Costs/Cost" + number, true, 20), font, IsEnglishUi);
             if (remainingSalesPeriods >= 0) { visual.SetCostBadge(GetTextureMaterial("OfferClockBadge", "CardAssets/Content/clock", true, 20)); visual.SetCostBadgeText(remainingSalesPeriods.ToString(), font); SetShopOfferCostBadgePosition(visual); }
             visual.SetDisplayName(title); visual.SetDisplayDescription(data, description, IsEnglishUi, string.Empty); visual.PrepareFaceUp(CardHome, 1.08f, 0f); visual.gameObject.SetActive(true); cards.Add(visual);
         }
@@ -356,16 +378,28 @@ namespace CardOpen.Prototype
             shopDeckRemovalPrice += 50;
             RemovePurchasedShopCardVisual(0);
             shopDeckRemovalSelectionActive = false;
-            AddScorePopup(Ui(price + " 골드 사용\n덱 카드 제거", "Spent " + price + " gold\nRemoved a deck card"),
+            AddScorePopup(Ui(price + " 골드 사용\n덱 잎 제거", "Spent " + price + " gold\nRemoved a deck card"),
                 new Color(1f, 0.82f, 0.25f), Time.unscaledTime, scorePopups.Count, 0);
             CloseCombatDeckInspection();
         }        private void ResolveEventChoice(int index)
         {
             eventChoiceActive = false;
-            if (activeEventId == 1 && index == 0) { global::CombatCard card = DrawShopCombatCard(1); if (card != null) runCombatDeck.Add(card); }
+            if (activeEventId == 1 && index == 0)
+            {
+                eventRewardOpeningActive = true;
+                pendingShopRewardOffer = new ShopOffer
+                { RarityTier = 1, ChoiceCount = 1, Card = new global::CombatCard() };
+                shopRewardOpeningActive = true;
+                shopChoiceActive = false;
+                activePackData = Resources.Load<global::CardPackData>("CardPacks/FarAndWide");
+                PrepareShopRewardChoices();
+                EnsureShopRewardPackVisual();
+                BeginSequence(false);
+                return;
+            }
             else if (activeEventId == 2 && index == 0)
             {
-                string givenCardName = "카드";
+                string givenCardName = "잎";
                 global::CardColor givenColor = global::CardColor.White;
                 int givenNumber = 1;
                 if (runCombatDeck.Count > 0)
@@ -374,7 +408,7 @@ namespace CardOpen.Prototype
                     global::CombatCard givenCard = runCombatDeck[removeIndex];
                     if (givenCard != null)
                     {
-                        givenCardName = givenCard.Type != null ? givenCard.Type.GetLocalizedName(IsEnglishUi) : "카드";
+                        givenCardName = givenCard.Type != null ? givenCard.Type.GetLocalizedName(IsEnglishUi) : "잎";
                         givenColor = givenCard.Color; givenNumber = Mathf.Clamp(givenCard.Number, 1, 6);
                     }
                     runCombatDeck.RemoveAt(removeIndex);
@@ -411,6 +445,7 @@ namespace CardOpen.Prototype
                 AdvanceShopOfferPeriods();
                 shopChoiceActive = false;
                 ClearCards();
+                if (CompletePendingBossChapterTransition()) return;
                 BeginStageSelection();
                 return;
             }
@@ -479,6 +514,7 @@ namespace CardOpen.Prototype
             sharedPackPreviewActive = false;
             sharedResultSnapshotJson = null;
             sharedResultMode = false;
+            challengeAbandoned = false;
             shareFeedback = null;
             CloseDeckInspection();
             ClearUsedCardPile();
@@ -502,6 +538,10 @@ namespace CardOpen.Prototype
             scoreTransferStartTime = -1f;
             completedPacks = 0;
             currentGoalIndex = 0;
+            currentStageChapter = 1;
+            completedStageCount = 0;
+            pendingBossChapterTransition = false;
+            playerHealth = PlayerMaximumHealth;
             stageChapterInitialized = false;
             stageDiscardPile.Clear();
             lastUsedStageCard = null;
@@ -518,6 +558,7 @@ namespace CardOpen.Prototype
             usedCastCount = 0;
             LoadStarterRelics();
             theFoolUseCount = 0;
+            lightStoryUseCount = 0;
             gold = 0;
             rewardChoiceActive = false;
             shopChoiceActive = false;
@@ -672,6 +713,10 @@ namespace CardOpen.Prototype
         {
             playerShield = 0;
             playerBurn = 0;
+            playerWood = 0;
+            playerRegeneration = 0;
+            playerStun = 0;
+            playerBindDuration = 0;
             playerScales = 0;
             playerBleedingStacks.Clear();
             combatBuffVisualHash = int.MinValue;
@@ -756,6 +801,26 @@ namespace CardOpen.Prototype
             }
         }
 
+        private bool CompletePendingBossChapterTransition()
+        {
+            if (!pendingBossChapterTransition) return false;
+            pendingBossChapterTransition = false;
+            if (currentStageChapter < 3)
+            {
+                currentStageChapter++;
+                playerHealth = PlayerMaximumHealth;
+                stageChapterInitialized = false;
+                finalBossStageSpawned = false;
+                UpdateChapterBackground();
+                BeginStageSelection();
+            }
+            else
+            {
+                stageChapterInitialized = false;
+                phase = RevealPhase.RunCleared;
+            }
+            return true;
+        }
         private void BeginCombatVictoryAfterDefeatDelay()
         {
             if (combatVictoryRoutine == null) combatVictoryRoutine = StartCoroutine(FinishCombatAfterDefeatDelay());
@@ -764,14 +829,30 @@ namespace CardOpen.Prototype
         private IEnumerator FinishCombatAfterDefeatDelay()
         {
             yield return new WaitForSecondsRealtime(0.25f);
-            combatVictoryRoutine = null;
             if (enemies.Count == 0 || !enemies.TrueForAll(enemy => enemy == null || enemy.IsDefeated)) yield break;
+            while (leafMeteorResolving) yield return null;
+            combatVictoryRoutine = null;
+            ResetRelicTurnState();
+            theFoolUseCount = 0;
+            lightStoryUseCount = 0;
             ClearPlayerCombatBuffs();
+            if (currentStageChapter >= 3 && finalBossStageSpawned && lastUsedStageCard != null
+                && lastUsedStageCard.Kind == global::StageCardKind.BossBattle)
+            {
+                pendingBossChapterTransition = false;
+                rewardChoiceActive = false;
+                shopChoiceActive = false;
+                shopRewardOpeningActive = false;
+                pendingShopRewardOffer = null;
+                ClearCards();
+                phase = RevealPhase.RunCleared;
+                return;
+            }
             if (finalBossStageSpawned && lastUsedStageCard != null
                 && lastUsedStageCard.Kind == global::StageCardKind.BossBattle)
             {
-                stageChapterInitialized = false;
-                phase = RevealPhase.RunCleared;
+                pendingBossChapterTransition = true;
+                BeginGoldRewardChoice();
             }
             else if (stageChapterInitialized && lastUsedStageCard != null
                 && (lastUsedStageCard.Kind == global::StageCardKind.Battle

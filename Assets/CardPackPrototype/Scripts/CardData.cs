@@ -124,9 +124,9 @@ public sealed class CardDeckAbility
     [Min(0)] public int NumberMultiplier;
     [Min(0)] public int PackCardCount;
     [Range(0f, 100f)] public float ChancePercent;
-    [Tooltip("이 능력이 적용되는 카드 숫자 목록")]
+    [Tooltip("이 능력이 적용되는 잎 숫자 목록")]
     public List<int> ApplicableNumbers = new List<int>();
-    [Tooltip("이 능력이 적용되는 카드 색상 목록")]
+    [Tooltip("이 능력이 적용되는 잎 색상 목록")]
     public List<AbilityColor> ApplicableColors = new List<AbilityColor>();
     public bool ResetAccumulationAfterPack;
     [Min(1)] public int StackThreshold = 1;
@@ -136,7 +136,7 @@ public sealed class CardDeckAbility
     [Min(1)] public int PacksToTransform = 1;
     public CardTag GeneratedCardTag;
     [Min(0)] public int MaxTriggersPerPack;
-    [Tooltip("다른 자연 카드의 능력으로는 이 능력을 연쇄 발동하지 않음")]
+    [Tooltip("다른 자연 잎의 능력으로는 이 능력을 연쇄 발동하지 않음")]
     [InspectorName("자연 연쇄 발동 제외")]
     public bool ExcludeFromNatureChain;
 

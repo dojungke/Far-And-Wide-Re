@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: OldDagger
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uB0A1\uC740 \uB2E8\uAC80"
-  Description: "숫자가 2 이하인 카드를 뽑으면 150점 획득"
+  Description: "숫자가 2 이하인 잎을 뽑으면 150점 획득"
   EnglishName: Old Dagger
   EnglishDescription: "Gain 150 points when a card numbered 2 or lower is drawn."
   Rare: 1

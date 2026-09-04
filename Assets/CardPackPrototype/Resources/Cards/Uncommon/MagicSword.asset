@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: MagicSword
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uB9C8\uBC95 \uAC80\uC220"
-  Description: "카드 숫자만큼 스택 획득\n스택이 3 이상이면 3개를 소모해 이번 팩 동안 10% 점수 보너스 획득\n같은 효과 중첩 가능"
+  Description: "잎 숫자만큼 스택 획득\n스택이 3 이상이면 3개를 소모해 이번 팩 동안 10% 점수 보너스 획득\n같은 효과 중첩 가능"
   EnglishName: "Magic Swordsmanship"
   EnglishDescription: "Gain stacks equal to the card number.\nAt 3 or more stacks, spend 3 to gain a stacking 10% score bonus for this pack."
   Rare: 1

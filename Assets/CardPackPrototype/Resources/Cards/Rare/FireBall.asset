@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: FireBall
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uD654\uC5FC\uAD6C"
-  Description: "붉은색 카드를 뽑으면 다음 3번의 카드를 뽑는 동안 30% 점수 보너스 획득"
+  Description: "붉은색 잎을 뽑으면 다음 3번의 잎을 뽑는 동안 30% 점수 보너스 획득"
   EnglishName: "Fireball"
   EnglishDescription: "When a red card is drawn, gain a 30% score bonus for the next 3 card draws."
   Rare: 2

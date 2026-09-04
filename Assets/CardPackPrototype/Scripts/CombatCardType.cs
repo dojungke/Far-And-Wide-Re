@@ -17,7 +17,9 @@ public enum CombatAbilityEffect
     DrawCards,
     HealAfterUses,
     Scales,
-    ApplyBuff
+    ApplyBuff,
+    DiscardHandAndDamageAll,
+    GainShieldAfterUses
 }
 
 [Serializable]

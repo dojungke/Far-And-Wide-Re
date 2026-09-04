@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: MagicBullet
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uB9C8\uBC95 \uCD1D\uC54C"
-  Description: "카드 숫자만큼 스택 획득\n스택이 3 이상이면 3개를 소모해 50점 획득"
+  Description: "잎 숫자만큼 스택 획득\n스택이 3 이상이면 3개를 소모해 50점 획득"
   EnglishName: "Magic Bullet"
   EnglishDescription: "Gain stacks equal to the card number.\nAt 3 or more stacks, spend 3 to gain 50 points."
   Rare: 0

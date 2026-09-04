@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Diamond
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "다이아몬드"
-  Description: "뽑힐 때 2,500점 획득\n250% 점수 보너스 제공\n덱의 카드 1장에 홀로그램 부여"
+  Description: "뽑힐 때 2,500점 획득\n250% 점수 보너스 제공\n덱의 잎 1장에 홀로그램 부여"
   EnglishName: "Diamond"
   EnglishDescription: "Gain 2,500 points when drawn.\nGain a 250% score bonus when drawn.\nEnchant 1 card in the deck with Holographic."
   Rare: 4

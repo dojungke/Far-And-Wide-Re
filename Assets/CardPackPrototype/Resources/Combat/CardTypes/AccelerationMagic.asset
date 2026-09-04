@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: AccelerationMagic
   m_EditorClassIdentifier: Assembly-CSharp::CombatCardType
   CardName: "\uAC00\uC18D \uB9C8\uBC95"
-  Description: "\uCE74\uB4DC 1\uC7A5 \uB4DC\uB85C\uC6B0"
+  Description: "\uC78E 1\uC7A5\uC744 \uBF51\uB294\uB2E4."
   EnglishName: Acceleration Magic
   EnglishDescription: Draw 1 card.
   Rarity: 1

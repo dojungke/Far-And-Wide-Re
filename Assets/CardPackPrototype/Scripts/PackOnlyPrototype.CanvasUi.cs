@@ -68,7 +68,7 @@ namespace CardOpen.Prototype
             if (fontAsset == null) return;
             HashSet<char> characters = new HashSet<char>();
             AppendUniqueCharacters(characters,
-                "덱 확인 턴 종료 스테이지 선택 전투 보상 상점 상점 나가기 설정 언어 음량 닫기 도전 포기 취소 다음 팩을 선택하세요 봉입 카드 표시할 카드가 없습니다 카드 버리기 이 카드를 버릴까요 사용한 카드 더미 공격 피해량 방어력 출혈 보호막 골드 유물 행동 예정");
+                "덱 확인 차례 종료 스테이지 선택 전투 보상 상점 상점 나가기 설정 언어 음량 닫기 도전 포기 취소 다음 팩을 선택하세요 봉입 잎 표시할 잎이 없습니다 잎 버리기 이 잎을 버릴까요 사용한 잎 더미 공격 피해량 방어력 출혈 보호막 골드 가지 행동 예정");
             global::CardData[] cardData = Resources.LoadAll<global::CardData>("Cards");
             for (int i = 0; i < cardData.Length; i++)
             {
@@ -240,7 +240,7 @@ namespace CardOpen.Prototype
                 out _);
             Outline endTurnButtonOutline = canvasEndTurnButton.GetComponent<Outline>();
             if (endTurnButtonOutline != null) endTurnButtonOutline.enabled = false;
-            canvasEndTurnButton.GetComponentInChildren<TextMeshProUGUI>().text = Ui("턴 종료", "End Turn");
+            canvasEndTurnButton.GetComponentInChildren<TextMeshProUGUI>().text = Ui("차례 종료", "End Turn");
         }
         private void OpenCanvasDeckInspection()
         {
@@ -353,7 +353,7 @@ namespace CardOpen.Prototype
             }
             bool visible = phase != RevealPhase.GameOver && phase != RevealPhase.RunCleared;
             canvasPlayerHealthRoot.SetActive(visible);
-            if (!visible || stageSelectionVisible || restStageActive || eventChoiceActive)
+            if (!visible || stageSelectionVisible || restStageActive || eventChoiceActive || shopChoiceActive || shopRewardOpeningActive)
             {
                 if (combatPlayerCharacter != null) combatPlayerCharacter.SetActive(false);
                 if (!visible) return;
@@ -464,6 +464,7 @@ namespace CardOpen.Prototype
             hud.Action.gameObject.SetActive(false);
             hud.ActionCountdownIcon = CreateCanvasEnemyActionIcon(rootRect, "Action Countdown", out hud.ActionCountdownText);
             hud.ActionDamageIcon = CreateCanvasEnemyActionIcon(rootRect, "Action Damage", out hud.ActionDamageText);
+            hud.ActionHealIcon = CreateCanvasEnemyActionIcon(rootRect, "Action Heal", out hud.ActionHealText);
             GameObject bar = new GameObject("Health Bar", typeof(RectTransform), typeof(Image));
             bar.transform.SetParent(rootRect, false);
             RectTransform barRect = bar.GetComponent<RectTransform>();
@@ -532,13 +533,27 @@ namespace CardOpen.Prototype
                 hud.Name.text = IsEnglishUi ? enemy.EnglishName : enemy.Name;
                 if (clockTexture == null) clockTexture = Resources.Load<Texture2D>("CardAssets/Content/clock");
                 if (attackTexture == null) attackTexture = Resources.Load<Texture2D>("CardAssets/Content/attack");
+                if (healTexture == null) healTexture = Resources.Load<Texture2D>("CardAssets/Content/heal");
+                if (multiHealTexture == null) multiHealTexture = Resources.Load<Texture2D>("CardAssets/Content/multiheal");
+                if (summonTexture == null) summonTexture = Resources.Load<Texture2D>("CardAssets/Content/Summon");
                 GetEnemyActionUiPositions(enemy, GetEnemyUiX(i), width,
-                    out float countdownX, out float damageX, out _);
+                    out float countdownX, out float damageX, out float healX, out _);
                 UpdateCanvasEnemyActionIcon(hud.ActionCountdownIcon, hud.ActionCountdownText, clockTexture,
                     enemy.ActionTurnsRemaining.ToString(), countdownX - GetEnemyUiX(i), clockTexture != null);
                 bool hasDamage = enemy.ActionDamage > 0 && attackTexture != null;
                 UpdateCanvasEnemyActionIcon(hud.ActionDamageIcon, hud.ActionDamageText, attackTexture,
                     enemy.ActionDamage.ToString(), damageX - GetEnemyUiX(i), hasDamage);
+                int selfHeal = enemy.Definition != null
+                    ? enemy.SelfHealAmount : 0;
+                int allHeal = enemy.Definition != null
+                    ? enemy.AllEnemyHealAmount : 0;
+                bool summons = enemy.HasSummonAction;
+                bool healsAll = allHeal > 0;
+                int healAmount = Mathf.Max(selfHeal, allHeal);
+                Texture2D healActionTexture = summons ? summonTexture : (healsAll ? multiHealTexture : healTexture);
+                UpdateCanvasEnemyActionIcon(hud.ActionHealIcon, hud.ActionHealText, healActionTexture,
+                    summons ? string.Empty : healAmount.ToString(), healX - GetEnemyUiX(i),
+                    (summons || healAmount > 0) && healActionTexture != null);
                 float ratio = enemy.MaximumHealth > 0 ? Mathf.Clamp01((float)enemy.Health / enemy.MaximumHealth) : 0f;
                 hud.HealthFill.rectTransform.anchorMax = new Vector2(ratio, 1f);
                 hud.Health.text = enemy.Health.ToString("N0") + " / " + enemy.MaximumHealth.ToString("N0");
@@ -658,6 +673,10 @@ namespace CardOpen.Prototype
             }
             playerBuffEntries.Clear();
             if (playerBurn > 0) playerBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Burn"), playerBurn));
+            if (playerWood > 0) playerBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Wood"), playerWood));
+            if (playerRegeneration > 0) playerBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Regeneration"), playerRegeneration));
+            if (playerStun > 0) playerBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Stun"), playerStun));
+            if (playerBindDuration > 0) playerBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Bind"), playerBindDuration));
             if (playerScales > 0) playerBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Scales"), playerScales));
             for (int i = 0; i < playerBleedingStacks.Count; i++)
                 playerBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Bleeding"), playerBleedingStacks[i]));
@@ -670,7 +689,7 @@ namespace CardOpen.Prototype
                 {
                     global::CombatRelicDefinition relic = ownedRelics[i];
                     if (relic == null) continue;
-                    int amount = relic.Effect == CombatRelicEffect.CardUseDamagePercent ? relicDamagePercentThisTurn : relic.Amount;
+                    int amount = relic.Effect == CombatRelicEffect.CardUseDamagePercent ? relicDamageBonusThisTurn : relic.Amount;
                     playerRelicEntries.Add(new CombatRelicListVisual.Entry(relic, amount));
                 }
             UpdateCanvasRelicList(canvasRelicList, playerRelicEntries,
@@ -689,6 +708,10 @@ namespace CardOpen.Prototype
                 if (visible)
                 {
                     if (enemy.Burn > 0) enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Burn"), enemy.Burn));
+                    if (enemy.Wood > 0) enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Wood"), enemy.Wood));
+                    if (enemy.Regeneration > 0) enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Regeneration"), enemy.Regeneration));
+                    if (enemy.Stun > 0) enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Stun"), enemy.Stun));
+                    if (enemy.Cleverness > 0) enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Cleverness"), enemy.Cleverness));
                     if (enemy.Scales > 0) enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Scales"), enemy.Scales));
                     for (int stack = 0; stack < enemy.BleedingDurations.Count; stack++)
                         enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Bleeding"), enemy.BleedingDurations[stack]));
@@ -700,7 +723,7 @@ namespace CardOpen.Prototype
                     new Vector2(x - 8f, -(topY + 349f)), new Vector2(44f, 40f), 52f, visible);
                 enemyActionBuffEntries.Clear();
                 if (visible) CollectEnemyActionBuffEntries(enemy, enemyActionBuffEntries);
-                GetEnemyActionUiPositions(enemy, GetEnemyUiX(i), width, out _, out _, out float actionBuffX);
+                GetEnemyActionUiPositions(enemy, GetEnemyUiX(i), width, out _, out _, out _, out float actionBuffX);
                 UpdateCanvasIconList(canvasEnemyActionBuffLists[i], enemyActionBuffEntries,
                     new Vector2(actionBuffX - 24f, -(topY + 160f)), new Vector2(48f, 48f), 52f, visible);
             }
@@ -746,34 +769,34 @@ namespace CardOpen.Prototype
                 bool openingPack = phase == RevealPhase.Pack || phase == RevealPhase.Animating;
                 canvasContextTitle.text = openingPack ? Ui("상점 보상 팩", "Shop Reward Pack") : Ui("보상 선택", "Choose Reward");
                 canvasContextMessage.text = openingPack
-                    ? Ui("카드팩을 위쪽으로 드래그해 뜯으세요.", "Drag the pack upward to open it.")
-                    : Ui("카드를 위로 끌어올려 보상을 선택하세요.", "Drag a card upward to choose your reward.");
+                    ? Ui("잎팩을 위쪽으로 드래그해 뜯으세요.", "Drag the pack upward to open it.")
+                    : Ui("잎을 위로 끌어올려 보상을 선택하세요.", "Drag a card upward to choose your reward.");
             }
             if (!shopRewardOpeningActive && eventChoiceActive)
             {
-                canvasContextTitle.text = activeEventId == 1 ? Ui("떨어진 카드를 발견했다", "You found a fallen card") : Ui("수상한 인물이 카드를 요구했다", "A suspicious figure asks for a card");
-                canvasContextMessage.text = Ui("선택지 카드를 위로 드래그해 사용하세요.", "Drag a choice card upward to use it.");
+                canvasContextTitle.text = activeEventId == 1 ? Ui("떨어진 잎을 발견했다", "You found a fallen card") : Ui("수상한 인물이 잎을 요구했다", "A suspicious figure asks for a card");
+                canvasContextMessage.text = Ui("선택지 잎을 위로 드래그해 사용하세요.", "Drag a choice card upward to use it.");
             }
             if (!shopRewardOpeningActive && !eventChoiceActive && restStageActive)
             {
                 canvasContextTitle.text = Ui("휴식", "Rest");
-                canvasContextMessage.text = Ui("휴식 카드를 위로 드래그해 사용하세요.", "Drag the rest card upward to use it.");
+                canvasContextMessage.text = Ui("휴식 잎을 위로 드래그해 사용하세요.", "Drag the rest card upward to use it.");
             }
             if (!shopRewardOpeningActive && !eventChoiceActive && !restStageActive && stageSelectionVisible)
             {
-                canvasContextTitle.text = Ui("스테이지 선택", "Choose a Stage");
-                canvasContextMessage.text = Ui("카드를 위로 드래그해 스테이지를 선택하세요.",
+                canvasContextTitle.text = GetStageSelectionTitle();
+                canvasContextMessage.text = Ui("잎을 위로 드래그해 스테이지를 선택하세요.",
                     "Drag a stage card upward to choose it.");
             }
             if (!shopRewardOpeningActive && !eventChoiceActive && !restStageActive && !stageSelectionVisible && rewardChoiceActive)
             {
                 canvasContextTitle.text = string.IsNullOrEmpty(pendingRewardContextTitle) ? Ui("전투 보상", "Combat Reward") : pendingRewardContextTitle;
-                canvasContextMessage.text = string.IsNullOrEmpty(pendingRewardContextMessage) ? Ui("카드를 위로 드래그해 보상을 받고, 버린 카드 더미로 드래그해 거절하세요.", "Drag the card upward to claim it, or drag it to the discard pile to decline.") : pendingRewardContextMessage;
+                canvasContextMessage.text = string.IsNullOrEmpty(pendingRewardContextMessage) ? Ui("잎을 위로 드래그해 보상을 받고, 버린 잎 더미로 드래그해 거절하세요.", "Drag the card upward to claim it, or drag it to the discard pile to decline.") : pendingRewardContextMessage;
             }
             if (!shopRewardOpeningActive && !eventChoiceActive && !restStageActive && !stageSelectionVisible && !rewardChoiceActive)
             {
                 canvasContextTitle.text = Ui("상점", "Shop");
-                canvasContextMessage.text = Ui("카드를 위로 드래그해 구매하세요.", "Drag a card upward to purchase it.");
+                canvasContextMessage.text = Ui("잎을 위로 드래그해 구매하세요.", "Drag a card upward to purchase it.");
             }
         }
         private TextMeshProUGUI CreateSettingsText(string name, Transform parent, Vector2 anchoredPosition,
@@ -959,15 +982,11 @@ namespace CardOpen.Prototype
             canvasRunEndBody = CreateSettingsText("Body", panel.transform, new Vector2(0f, -124f),
                 new Vector2(610f, 260f), 24f, TextAlignmentOptions.Center);
             canvasRunEndBody.enableWordWrapping = true;
-            canvasRunEndLeftButton = CreateSettingsButton("Left Action", panel.transform, new Vector2(-150f, -405f),
-                new Vector2(260f, 70f), HandleCanvasRunEndLeftAction, out _);
-            canvasRunEndRightButton = CreateSettingsButton("Right Action", panel.transform, new Vector2(150f, -405f),
+
+
+            canvasRunEndRightButton = CreateSettingsButton("Right Action", panel.transform, new Vector2(0f, -405f),
                 new Vector2(260f, 70f), StartNewRun, out _);
             canvasRunEndRoot.SetActive(false);
-        }
-        private void HandleCanvasRunEndLeftAction()
-        {
-            ShareCurrentResult();
         }
         private void UpdateCanvasRunEndUi()
         {
@@ -985,19 +1004,28 @@ namespace CardOpen.Prototype
             int goalIndex = Mathf.Clamp(currentGoalIndex, 0, GoalScores.Length - 1);
             int targetScore = GoalScores[goalIndex];
             int reachedStage = cleared ? GoalScores.Length : Mathf.Clamp(currentGoalIndex + 1, 1, GoalScores.Length);
-            canvasRunEndTitle.text = cleared ? Ui("런 클리어!", "RUN CLEARED!") : Ui("게임 오버", "GAME OVER");
-            string resultMessage = cleared ? Ui("모든 목표를 달성했습니다.", "All goals cleared.")
-                : Ui("목표 점수에 도달하지 못했습니다.", "Goal score not reached.");
-            string roundValue = cleared ? Ui("완료", "CLEAR") : roundScore.ToString("N0") + " / " + targetScore.ToString("N0");
-            canvasRunEndBody.text = (sharedResultMode ? Ui("공유받은 결과\n\n", "SHARED RESULT\n\n") : string.Empty)
-                + resultMessage + "\n\n"
-                + Ui("총점 ", "TOTAL SCORE ") + totalScore.ToString("N0") + "    "
-                + Ui("도달 단계 ", "STAGE ") + reachedStage + " / " + GoalScores.Length + "    "
-                + Ui("라운드 점수 ", "ROUND SCORE ") + roundValue + "\n\n"
-                + Ui("아래 덱 카드를 눌러 상세히 볼 수 있어요.", "Select a deck card below to inspect it.");
-            canvasRunEndLeftButton.GetComponentInChildren<TextMeshProUGUI>().text = Ui("공유", "Share");
+            bool defeated = !sharedResultMode && playerHealth <= 0;
+            canvasRunEndTitle.text = cleared ? Ui("런 클리어!", "RUN CLEARED!") : Ui("도전 실패", "CHALLENGE FAILED");
+            if (cleared)
+            {
+                string roundValue = Ui("완료", "CLEAR");
+                canvasRunEndBody.text = (sharedResultMode ? Ui("공유받은 결과\n\n", "SHARED RESULT\n\n") : string.Empty)
+                    + Ui("모든 목표를 달성했습니다.", "All goals cleared.") + "\n\n"
+                    + Ui("총점 ", "TOTAL SCORE ") + totalScore.ToString("N0") + "    "
+                    + Ui("도달 단계 ", "STAGE ") + reachedStage + " / " + GoalScores.Length + "    "
+                    + Ui("라운드 점수 ", "ROUND SCORE ") + roundValue + "\n\n"
+                    + Ui("아래 덱 잎을 눌러 상세히 볼 수 있어요.", "Select a deck card below to inspect it.");
+            }
+            else
+            {
+                canvasRunEndBody.text = challengeAbandoned
+                    ? Ui("도전을 포기하였습니다.", "The challenge was abandoned.")
+                    : defeated
+                        ? Ui("체력이 0이되어 패배 하였습니다.", "You were defeated because your health reached 0.")
+                        : Ui("이번 라운드에서 목표 점수를 달성하지 못했습니다.", "The goal score was not reached this round.");
+            }
             canvasRunEndRightButton.GetComponentInChildren<TextMeshProUGUI>().text = sharedResultMode
-                ? Ui("도전하기", "Challenge") : Ui("다시 시작", "Restart");
+                ? Ui("도전하기", "Challenge") : Ui("다시 도전", "Try Again");
         }
         private void EnsureCanvasPackChoiceUi()
         {
@@ -1137,12 +1165,12 @@ namespace CardOpen.Prototype
             if (!visible) return;
             int count = GetPackContentsCardCount();
             int cardsPerPack = Mathf.Max(1, inspectedPackChoice.CardsPerPack);
-            canvasPackContentsTitle.text = Ui("봉입 카드 (" + cardsPerPack + "장입)",
+            canvasPackContentsTitle.text = Ui("봉입 잎 (" + cardsPerPack + "장입)",
                 "Included cards (" + cardsPerPack + (cardsPerPack == 1 ? " card)" : " cards)"));
             canvasPackContentsPreviousButton.gameObject.SetActive(count > 0);
             canvasPackContentsNextButton.gameObject.SetActive(count > 0);
             canvasPackContentsCount.text = count > 0 ? (packContentsPreviewIndex + 1) + " / " + count
-                : Ui("표시할 카드가 없습니다.", "No cards to display.");
+                : Ui("표시할 잎이 없습니다.", "No cards to display.");
         }
         private void EnsureCanvasDeckInspectionControls()
         {
@@ -1169,7 +1197,7 @@ namespace CardOpen.Prototype
             canvasDeckInspectionDiscardButton = CreateCanvasButton("Deck Discard", new Vector2(0.5f, 0f),
                 new Vector2(0.5f, 0f), new Vector2(0f, 22f), new Vector2(180f, 52f),
                 () => discardConfirmationVisible = true, out TextMeshProUGUI discardLabel);
-            discardLabel.text = Ui("카드 버리기", "Discard card");
+            discardLabel.text = Ui("잎 버리기", "Discard card");
             canvasDeckInspectionDiscardButton.transform.SetParent(canvasDeckInspectionControlsRoot.transform, false);
             canvasDeckInspectionConfirmation = new GameObject("Deck Discard Confirmation", typeof(RectTransform), typeof(Image));
             canvasDeckInspectionConfirmation.transform.SetParent(canvasDeckInspectionControlsRoot.transform, false);
@@ -1181,7 +1209,7 @@ namespace CardOpen.Prototype
             canvasDeckInspectionConfirmation.GetComponent<Image>().color = new Color(0.10f, 0.06f, 0.08f, 0.98f);
             TextMeshProUGUI message = CreateSettingsText("Message", canvasDeckInspectionConfirmation.transform,
                 new Vector2(0f, -28f), new Vector2(370f, 64f), 22f, TextAlignmentOptions.Center);
-            message.text = Ui("이 카드를 버릴까요?", "Discard this card?");
+            message.text = Ui("이 잎을 버릴까요?", "Discard this card?");
             CreateSettingsButton("Confirm", canvasDeckInspectionConfirmation.transform, new Vector2(-90f, -126f),
                 new Vector2(140f, 52f), DiscardInspectedDeckCard, out TextMeshProUGUI confirmLabel);
             confirmLabel.text = Ui("버리기", "Discard");
@@ -1232,6 +1260,9 @@ namespace CardOpen.Prototype
             if (canvasEffectPopupRoot != null) return;
             canvasEffectPopupRoot = new GameObject("Effect Info Popup", typeof(RectTransform), typeof(Image));
             canvasEffectPopupRoot.transform.SetParent(runtimeUiRoot, false);
+            Canvas popupCanvas = canvasEffectPopupRoot.AddComponent<Canvas>();
+            popupCanvas.overrideSorting = true;
+            popupCanvas.sortingOrder = 4000;
             RectTransform rootRect = canvasEffectPopupRoot.GetComponent<RectTransform>();
             rootRect.anchorMin = new Vector2(0f, 1f);
             rootRect.anchorMax = new Vector2(0f, 1f);
@@ -1265,10 +1296,12 @@ namespace CardOpen.Prototype
             GetUiLayout(out float scale, out float offsetX, out float offsetY);
             if (scale <= 0f) return;
             RectTransform rootRect = canvasEffectPopupRoot.GetComponent<RectTransform>();
+            rootRect.localScale = Vector3.one * 0.92f;
             float width = screenWidth / scale;
             float height = screenHeight / scale;
             rootRect.anchoredPosition = new Vector2((screenX - offsetX) / scale, -(screenY - offsetY) / scale);
             rootRect.sizeDelta = new Vector2(width, height);
+            canvasEffectPopupRoot.transform.SetAsLastSibling();
             canvasEffectPopupIcon.gameObject.SetActive(icon != null);
             if (icon != null)
             {
@@ -1441,9 +1474,9 @@ namespace CardOpen.Prototype
             GUI.matrix = Matrix4x4.TRS(new Vector3(offsetX, offsetY, 0f), Quaternion.identity,
                 new Vector3(scale, scale, 1f));
             if (canvasDeckButton == null && GUI.Button(UiRect(new Rect(0f, 28f, 190f, 48f), new Rect(0f, 64f, 190f, 48f)), Ui("덱 확인", "View Deck"), discardButtonStyle)) OpenStageDeckInspection();
-            if (canvasContextTitle == null) GUI.Label(new Rect(0f, 40f, UiReferenceWidth, 54f), Ui("스테이지 선택", "Choose a Stage"), deckRarityStyle);
+            if (canvasContextTitle == null) GUI.Label(new Rect(0f, 40f, UiReferenceWidth, 54f), GetStageSelectionTitle(), deckRarityStyle);
             if (canvasContextMessage == null) GUI.Label(new Rect(0f, 92f, UiReferenceWidth, 34f),
-                Ui("카드를 위로 드래그해 스테이지를 선택하세요.", "Drag a stage card upward to choose it."), discardMessageStyle);
+                Ui("잎을 위로 드래그해 스테이지를 선택하세요.", "Drag a stage card upward to choose it."), discardMessageStyle);
             GUI.matrix = previousMatrix;
         }
         // A new run starts directly with a five-card hand instead of a pack-opening step.

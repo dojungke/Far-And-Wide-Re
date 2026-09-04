@@ -163,6 +163,7 @@ namespace CardOpen.Prototype
                 CombinedCopies = card.CombinedCopies,
                 CombinedHolographicCopies = card.CombinedHolographicCopies,
                 IsHolographic = card.IsHolographic,
+                GreenDiceDamageMultiplier = card.GreenDiceDamageMultiplier,
                 EquippedMagic = CaptureSharedCard(card.EquippedMagic),
                 EquippedWeapon = CaptureSharedCard(card.EquippedWeapon),
                 AccumulatedFlatScore = CaptureIntValues(card.AccumulatedFlatScoreByAbility),
@@ -301,6 +302,7 @@ namespace CardOpen.Prototype
                 CombinedCopies = Mathf.Max(1, source.CombinedCopies),
                 CombinedHolographicCopies = Mathf.Max(0, source.CombinedHolographicCopies),
                 IsHolographic = source.IsHolographic,
+                GreenDiceDamageMultiplier = source.GreenDiceDamageMultiplier > 0f ? source.GreenDiceDamageMultiplier : 1f,
                 IsStoredInDeck = true
             };
             card.EquippedMagic = RestoreSharedCard(source.EquippedMagic, lookup);
@@ -430,7 +432,12 @@ namespace CardOpen.Prototype
             hash = hash * 31 + (inspectedDeckIndex + 1);
             hash = hash * 31 + playerHealth;
             hash = hash * 31 + playerShield;
+            hash = hash * 31 + lightStoryUseCount;
             hash = hash * 31 + playerBurn;
+            hash = hash * 31 + playerWood;
+            hash = hash * 31 + playerRegeneration;
+            hash = hash * 31 + playerStun;
+            hash = hash * 31 + playerBindDuration;
             hash = hash * 31 + playerScales;
             hash = hash * 31 + playerBleedingStacks.Count;
             hash = hash * 31 + gold;
@@ -450,6 +457,9 @@ namespace CardOpen.Prototype
                 hash = hash * 31 + (enemy != null ? enemy.ActionDamage : 0);
                 hash = hash * 31 + (enemy != null ? enemy.Shield : 0);
                 hash = hash * 31 + (enemy != null ? enemy.Burn : 0);
+                hash = hash * 31 + (enemy != null ? enemy.Wood : 0);
+                hash = hash * 31 + (enemy != null ? enemy.Regeneration : 0);
+                hash = hash * 31 + (enemy != null ? enemy.Stun : 0);
                 hash = hash * 31 + (enemy != null ? enemy.Scales : 0);
                 hash = hash * 31 + (enemy != null ? enemy.BleedingDurations.Count : 0);
             }

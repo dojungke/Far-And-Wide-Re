@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: MagicSuperFire
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uB9C8\uB3C4 \uD3ED\uACA9"
-  Description: "카드팩을 열 때 1,000점 획득"
+  Description: "잎팩을 열 때 1,000점 획득"
   EnglishName: Arcane Bombardment
   EnglishDescription: "Gain 1,000 points when a card pack is opened."
   Rare: 2

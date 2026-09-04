@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: WaterRune
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uBB3C\uB8EC"
-  Description: "파란색 카드를 뽑을 시 40% 점수 보너스, 200점 획득\n4% 확률로 홀로그램 부여\n다른 종류의 룬을 획득하면 공명"
+  Description: "파란색 잎을 뽑을 시 40% 점수 보너스, 200점 획득\n4% 확률로 홀로그램 부여\n다른 종류의 룬을 획득하면 공명"
   EnglishName: Water Rune
   EnglishDescription: "On blue draw: +40% score, +200 pts\n4% chance to become Holographic\nResonates with a different Rune type"
   Rare: 2

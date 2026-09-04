@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: BigWood
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uD070 \uB098\uBB34 \uC815\uB839"
-  Description: "다음 카드팩의 카드 수 1장 증가"
+  Description: "다음 잎팩의 잎 수 1장 증가"
   EnglishName: "Greater Tree Spirit"
   EnglishDescription: "Increase the number of cards in the next pack by 1."
   Rare: 2

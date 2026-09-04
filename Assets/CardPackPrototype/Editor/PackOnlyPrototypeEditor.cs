@@ -37,6 +37,11 @@ namespace CardOpen.Editor
                 EditorGUILayout.LabelField("Relics", EditorStyles.boldLabel);
                 DrawAddRelicButton(prototype, "Add Green Ring", "Combat/Relics/GreenRing");
                 DrawAddRelicButton(prototype, "Add Magitech Engine", "Combat/Relics/MagitechEngine");
+                DrawAddRelicButton(prototype, "Add Magic Glove (Uncommon)", "Combat/Relics/MagicGlove");
+                DrawAddRelicButton(prototype, "Add Sharp Sword (Common)", "Combat/Relics/SharpSword");
+                DrawAddRelicButton(prototype, "Add Green Dice (Uncommon)", "Combat/Relics/GreenDice");
+                DrawAddRelicButton(prototype, "Add Flaming Sword (Rare)", "Combat/Relics/FlamingSword");
+                DrawAddRelicButton(prototype, "Add Blue Blue (Rare)", "Combat/Relics/BlueBlue");
             }
         }
 

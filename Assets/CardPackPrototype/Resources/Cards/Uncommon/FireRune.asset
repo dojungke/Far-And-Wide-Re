@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: FireRune
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uBD88\uB8EC"
-  Description: "붉은색 카드를 뽑을 시 20% 점수 보너스, 100점 획득\n2% 확률로 홀로그램 부여\n다른 종류의 룬을 획득하면 공명"
+  Description: "붉은색 잎을 뽑을 시 20% 점수 보너스, 100점 획득\n2% 확률로 홀로그램 부여\n다른 종류의 룬을 획득하면 공명"
   EnglishName: Fire Rune
   EnglishDescription: "On red draw: +20% score, +100 pts\n2% chance to become Holographic\nResonates with a different Rune type"
   Rare: 1

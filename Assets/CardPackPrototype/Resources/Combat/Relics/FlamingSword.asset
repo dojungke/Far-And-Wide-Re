@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3dcaf5db16bf4f7ab48e9b4fa2ef661c, type: 3}
+  m_Name: FlamingSword
+  m_EditorClassIdentifier: Assembly-CSharp::CombatRelicDefinition
+  RelicName: "\uBD88\uD0C0\uB294 \uAC80"
+  Description: "\uBE68\uAC04\uC78E\uC73C\uB85C \uCCB4\uB825\uC5D0 \uC785\uD78C \uD53C\uD574\uB9CC\uD07C
+    \uD654\uC0C1\uC744 \uBD80\uC5EC\uD569\uB2C8\uB2E4."
+  EnglishName: Flaming Sword
+  EnglishDescription: Red leaves apply Burn equal to the health damage they deal.
+  Image: {fileID: 2800000, guid: 9a740cb06d4c3594fbc58a03ccf97637, type: 3}
+  Rarity: 2
+  CanAppearInShopRewardPack: 1
+  Effect: 11
+  Amount: 0
+  ShowAmountAsPercent: 0

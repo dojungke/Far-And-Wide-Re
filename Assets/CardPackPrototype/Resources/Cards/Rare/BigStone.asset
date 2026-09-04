@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: BigStone
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uD070 \uBC14\uC704 \uC815\uB839"
-  Description: "이 카드와 같은 색의 카드에 50% 점수 보너스 추가"
+  Description: "이 잎과 같은 색의 잎에 50% 점수 보너스 추가"
   EnglishName: "Greater Rock Spirit"
   EnglishDescription: "Cards with the same color as this card gain a 50% score bonus."
   Rare: 2

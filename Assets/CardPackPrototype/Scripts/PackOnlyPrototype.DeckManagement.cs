@@ -110,8 +110,8 @@ namespace CardOpen.Prototype
             }
             int initialNumber = UnityEngine.Random.Range(1, 7);
             usedPilePlaceholderData = ScriptableObject.CreateInstance<global::CardData>();
-            usedPilePlaceholderData.Name = "버린 카드 더미";
-            usedPilePlaceholderData.Description = "전투 시작 카드";
+            usedPilePlaceholderData.Name = "버린 잎 더미";
+            usedPilePlaceholderData.Description = "전투 시작 잎";
             usedPilePlaceholderData.Rare = global::CardRarity.Common;
             usedPilePlaceholder = CardVisual.CreatePrefabInstance("Starting Discard Card", usedPileRoot);
             string colorKey = initialColor.ToString();
@@ -125,7 +125,7 @@ namespace CardOpen.Prototype
                     "CardAssets/Attributes/AttributeBackRemasterPurple", false),
                 patternMaterial, GetTextureMaterial("UsedPileMana", "CardAssets/Content/Mana", true, 10),
                 costMaterial, font, IsEnglishUi);
-            usedPilePlaceholder.SetDisplayName("버린 카드 더미");
+            usedPilePlaceholder.SetDisplayName("버린 잎 더미");
             usedPilePlaceholder.gameObject.SetActive(true);
             lastUsedCard = new StoredCard { Color = initialColor, Number = initialNumber };
         }
@@ -138,8 +138,8 @@ namespace CardOpen.Prototype
             }
             if (usedPilePlaceholder != null) Destroy(usedPilePlaceholder.gameObject);
             usedPilePlaceholderData = ScriptableObject.CreateInstance<global::CardData>();
-            usedPilePlaceholderData.Name = "버린 카드 더미";
-            usedPilePlaceholderData.Description = "사용 가능한 카드를 만들기 위해 다시 지정된 카드";
+            usedPilePlaceholderData.Name = "버린 잎 더미";
+            usedPilePlaceholderData.Description = "사용 가능한 잎을 만들기 위해 다시 지정된 잎";
             usedPilePlaceholderData.Rare = global::CardRarity.Common;
             usedPilePlaceholder = CardVisual.CreatePrefabInstance("Reset Discard Card", usedPileRoot);
             string colorKey = color.ToString();
@@ -153,7 +153,7 @@ namespace CardOpen.Prototype
                     "CardAssets/Attributes/AttributeBackRemasterPurple", false),
                 patternMaterial, GetTextureMaterial("UsedPileMana", "CardAssets/Content/Mana", true, 10),
                 costMaterial, font, IsEnglishUi);
-            usedPilePlaceholder.SetDisplayName("버린 카드 더미");
+            usedPilePlaceholder.SetDisplayName("버린 잎 더미");
             usedPilePlaceholder.SetInteractionState(true, false);
             usedPilePlaceholder.gameObject.SetActive(true);
             usedPileCard = null;
@@ -173,7 +173,7 @@ namespace CardOpen.Prototype
 
             StoredCard selected = candidates[UnityEngine.Random.Range(0, candidates.Count)];
             ResetUsedPileReference(selected.Color, selected.Number);
-            AddScorePopup(Ui("버린 카드 더미 재지정\n사용 가능한 카드가 생겼습니다.",
+            AddScorePopup(Ui("버린 잎 더미 재지정\n사용 가능한 잎이 생겼습니다.",
                 "Discard pile reset\nA playable card is available."),
                 new Color(1f, 0.82f, 0.3f), Time.unscaledTime, scorePopups.Count, 0);
         }
@@ -1139,6 +1139,7 @@ if (canAbandonChallenge
                 return;
             }
             sharedResultMode = false;
+            challengeAbandoned = true;
             shareFeedback = null;
             scorePopups.Clear();
             packTearInProgress = false;

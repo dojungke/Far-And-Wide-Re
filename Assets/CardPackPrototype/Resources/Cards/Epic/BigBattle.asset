@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: BigBattle
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uB300\uACA9\uB3CC!"
-  Description: "이 카드와 다른 색의 카드를 뽑으면 30% 점수 보너스"
+  Description: "이 잎과 다른 색의 잎을 뽑으면 30% 점수 보너스"
   EnglishName: "Grand Clash!"
   EnglishDescription: "When a card with a different color from this card is drawn, gain a 30% score bonus."
   Rare: 3

@@ -1505,7 +1505,7 @@ namespace CardOpen.Prototype
         private string ApplyInheritedRelicDescription(StoredCard card, string description)
         {
             if (card == null || card.InheritedRelics.Count == 0) return description;
-            List<string> lines = new List<string> { Ui("조립 유물 효과", "[Assembled Relic Effects]") };
+            List<string> lines = new List<string> { Ui("조립 가지 효과", "[Assembled Relic Effects]") };
             for (int i = 0; i < card.InheritedRelics.Count; i++)
             {
                 StoredCard relic = card.InheritedRelics[i];
@@ -1519,7 +1519,7 @@ namespace CardOpen.Prototype
                     switch (ability.Effect)
                     {
                         case global::DeckAbilityEffect.AddScore:
-                            lines.Add(label + Ui(": 매 카드 +", ": +") + ability.Score * copies
+                            lines.Add(label + Ui(": 매 잎 +", ": +") + ability.Score * copies
                                 + Ui("점", " pts each draw"));
                             break;
                         case global::DeckAbilityEffect.IncreaseScoreBonusEfficiency:
@@ -1530,7 +1530,7 @@ namespace CardOpen.Prototype
                             string suffix = ability.ResetAccumulationAfterPack
                                 ? Ui(" (팩 종료 시 초기화)", " (resets after pack)")
                                 : string.Empty;
-                            lines.Add(label + Ui(": 매 카드 누적 +", ": accumulates +")
+                            lines.Add(label + Ui(": 매 잎 누적 +", ": accumulates +")
                                 + (ability.PercentBonus * copies).ToString("0.#")
                                 + Ui("%", "% each draw") + suffix);
                             break;

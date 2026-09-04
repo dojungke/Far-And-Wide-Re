@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de447bb1e154eab9000739e8d4f1221, type: 3}
+  m_Name: OddOld
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyDefinition
+  EnemyName: "\uC544\uB4DD\uD558\uB9AC \uBA3C \uC61B\uB0A0\uC5D0"
+  EnglishName: OddOld
+  Image: {fileID: 2800000, guid: e80c59a5d3ce81243ac596b67840b8f2, type: 3}
+  FallbackColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  MaximumHealth: 500
+  StartingBuffs:
+  - Buff: {fileID: 11400000, guid: e42ab67418d54c10838ae5cea221f9e5, type: 2}
+    Amount: 100
+  ActionName: "\uACF5\uACA9"
+  EnglishActionName: Attack
+  ActionInterval: 3
+  Abilities:
+  - Target: 2
+    Effect: 0
+    Amount: 20
+    RelatedBuff: {fileID: 0}
+  - Target: 2
+    Effect: 1
+    Amount: 2
+    RelatedBuff: {fileID: 11400000, guid: b804fdd6cf46488092f3793981468bf9, type: 2}
+  - Target: 2
+    Effect: 3
+    Amount: 50
+    RelatedBuff: {fileID: 0}
+  AttackDamage: 15
+  BleedingStacks: 2

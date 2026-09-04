@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Hero
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uC6A9\uC0AC"
-  Description: "카드를 뽑을 때 200점 획득\n카드팩 5개 후 각성 용사로 각성\n무기를 1개 장착할 수 있다"
+  Description: "잎을 뽑을 때 200점 획득\n잎팩 5개 후 각성 용사로 각성\n무기를 1개 장착할 수 있다"
   EnglishName: "Hero"
   EnglishDescription: "Gain 200 points whenever a card is drawn.\nAfter 5 card packs, awaken into Awakened Hero.\nCan equip 1 weapon."
   Rare: 3

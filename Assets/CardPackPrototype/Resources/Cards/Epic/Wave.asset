@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Wave
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uB300\uB958"
-  Description: "이전 카드와 다른 색의 카드를 뽑으면 300점 획득"
+  Description: "이전 잎과 다른 색의 잎을 뽑으면 300점 획득"
   EnglishName: "Convection"
   EnglishDescription: "When a card with a different color from the previous card is drawn, gain 300 points."
   Rare: 3

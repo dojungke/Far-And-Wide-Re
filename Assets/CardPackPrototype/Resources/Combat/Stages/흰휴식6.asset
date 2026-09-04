@@ -10,7 +10,7 @@ MonoBehaviour:
   Description: 잃은 체력의 30% + 10만큼 회복합니다.
   EnglishName: Rest
   EnglishDescription: Restore 30% of missing health + 10.
-  Image: {fileID: 0}
+  Image: {fileID: 2800000, guid: ecc9a1868d89b134ab326048a90aefc7, type: 3}
   Color: 4
   Number: 6
   Kind: 3

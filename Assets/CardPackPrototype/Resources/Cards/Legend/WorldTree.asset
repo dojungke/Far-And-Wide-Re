@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: WorldTree
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "세계수"
-  Description: "카드를 뽑을 때마다 100점씩 3회 획득"
+  Description: "잎을 뽑을 때마다 100점씩 3회 획득"
   EnglishName: "World Tree"
   EnglishDescription: "Whenever a card is drawn, gain 100 points 3 times."
   Rare: 4

@@ -13,11 +13,10 @@ MonoBehaviour:
   m_Name: BlueRing
   m_EditorClassIdentifier: Assembly-CSharp::CombatRelicDefinition
   RelicName: "\uD30C\uB791 \uBC18\uC9C0"
-  Description: "\uD30C\uB791\uC0C9 \uCE74\uB4DC\uC758 \uD53C\uD574\uB7C9\uC774 4
-    \uC99D\uAC00\uD569\uB2C8\uB2E4."
+  Description: "\uD30C\uB791\uC0C9 \uC78E\uC758 \uD53C\uD574\uB7C9\uC774 4 \uC99D\uAC00\uD569\uB2C8\uB2E4."
   EnglishName: Blue Ring
   EnglishDescription: Blue cards deal 4 more damage.
-  Image: {fileID: 2800000, guid: efd5d2b0de73105458561cbfe5eeb003, type: 3}
+  Image: {fileID: 2800000, guid: e459cb5f131a3b24caf921c837a4ea96, type: 3}
   Rarity: 0
   CanAppearInShopRewardPack: 1
   Effect: 4

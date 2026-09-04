@@ -11,7 +11,9 @@ public sealed class EnemyStartingBuff
 public enum EnemyActionEffect
 {
     Damage,
-    ApplyBuff
+    ApplyBuff,
+    HealSelf,
+    HealAllEnemies
 }
 
 [System.Serializable]
@@ -66,6 +68,18 @@ public sealed class EnemyDefinition : ScriptableObject
         return total;
     }
 
+    public int GetActionHealAmount(EnemyActionEffect effect)
+    {
+        if (!HasActionAbilities) return 0;
+        int total = 0;
+        for (int i = 0; i < Abilities.Count; i++)
+        {
+            EnemyActionAbility ability = Abilities[i];
+            if (ability != null && ability.Effect == effect)
+                total += Mathf.Max(0, ability.Amount);
+        }
+        return total;
+    }
     public int GetActionBuffAmount(string englishBuffName)
     {
         if (!HasActionAbilities)

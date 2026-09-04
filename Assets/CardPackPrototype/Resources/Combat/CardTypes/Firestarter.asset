@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ad7f86c4b1d4c4b9e8f2a1c3d5e7f90, type: 3}
+  m_Name: Firestarter
+  m_EditorClassIdentifier: Assembly-CSharp::CombatCardType
+  CardName: "\uBD88\uC3D8\uC2DC\uAC1C"
+  Description: "\uBAA8\uB4E0 \uC801\uC5D0\uAC8C \uB098\uBB34\uB97C 2 \uBD80\uC5EC\uD569\uB2C8\uB2E4."
+  EnglishName: Firestarter
+  EnglishDescription: Apply 2 Wood to all enemies.
+  Rarity: 0
+  Image: {fileID: 2800000, guid: 6d4e2f1a8b9c47e590a1b2c3d4e5f607, type: 3}
+  CanAppearInShopRewardPack: 1
+  RequiresEnemyTarget: 0
+  Abilities:
+  - Target: 1
+    Effect: 6
+    Amount: 2
+    UsesRequired: 1
+    DoubleAmountAgainstShield: 0
+    RelatedBuff: {fileID: 11400000, guid: 9c1d2e3f4a5b67889a0bc1d2e3f4a5b6, type: 2}

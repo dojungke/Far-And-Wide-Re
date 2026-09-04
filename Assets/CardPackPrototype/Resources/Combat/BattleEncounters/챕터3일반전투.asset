@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5136763f2b0e4fdbb5cf8e9fc71aae94, type: 3}
+  m_Name: "\uCC55\uD1303\uC77C\uBC18\uC804\uD22C"
+  m_EditorClassIdentifier: Assembly-CSharp::BattleEncounters
+  Stages:
+  - Enemies:
+    - {fileID: 11400000, guid: 1369c57c4c5d8a2439c0c1e80a77934b, type: 2}
+    - {fileID: 11400000, guid: 9426b64aac67d61479a7710ea1504db2, type: 2}
+  - Enemies:
+    - {fileID: 11400000, guid: 1690deb3874d7724296ca727ccd33e16, type: 2}
+    - {fileID: 11400000, guid: 1369c57c4c5d8a2439c0c1e80a77934b, type: 2}
+  - Enemies:
+    - {fileID: 11400000, guid: ea4607f48a4724545b42c166cfed934b, type: 2}
+    - {fileID: 11400000, guid: 43e62b3c16666a74b94d764bcea114b9, type: 2}
+  - Enemies:
+    - {fileID: 11400000, guid: 251c317266d8566479d41038586743d4, type: 2}
+    - {fileID: 11400000, guid: 43e62b3c16666a74b94d764bcea114b9, type: 2}
+    - {fileID: 11400000, guid: 251c317266d8566479d41038586743d4, type: 2}
+  - Enemies:
+    - {fileID: 11400000, guid: 81c9b77bfcb4ff74eb3cfb111b3c212f, type: 2}
+    - {fileID: 11400000, guid: e28c1e2e8b7c80f4ebac3757b049c163, type: 2}
+    - {fileID: 11400000, guid: 43e62b3c16666a74b94d764bcea114b9, type: 2}

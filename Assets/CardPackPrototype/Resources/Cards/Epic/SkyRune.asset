@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SkyRune
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uCC9C\uB8EC"
-  Description: "검정색 또는 흰색 카드를 뽑을 시 60% 점수 보너스, 300점 획득\n6% 확률로 홀로그램 부여\n다른 종류의 룬을 획득하면 공명"
+  Description: "검정색 또는 흰색 잎을 뽑을 시 60% 점수 보너스, 300점 획득\n6% 확률로 홀로그램 부여\n다른 종류의 룬을 획득하면 공명"
   EnglishName: Sky Rune
   EnglishDescription: "On black or white draw: +60% score, +300 pts\n6% chance to become Holographic\nResonates with a different Rune type"
   Rare: 3

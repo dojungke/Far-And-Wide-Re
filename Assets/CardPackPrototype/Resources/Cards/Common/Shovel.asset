@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Shovel
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uC0BD"
-  Description: "이 카드와 같은 색의 카드를 2회 뽑을 때마다 광석 카드 1장 생성\n팩당 최대 2회"
+  Description: "이 잎과 같은 색의 잎을 2회 뽑을 때마다 광석 잎 1장 생성\n팩당 최대 2회"
   EnglishName: Shovel
   EnglishDescription: "Every 2 times a card of this card's color is drawn, generate 1 Mineral card.\nUp to 2 times per pack."
   Rare: 0

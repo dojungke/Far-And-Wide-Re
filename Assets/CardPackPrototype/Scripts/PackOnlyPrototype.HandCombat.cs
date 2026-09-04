@@ -44,6 +44,36 @@ namespace CardOpen.Prototype
                     bleedingBuffDefinition = Resources.Load<global::CombatBuffDefinition>("Combat/Buffs/Bleeding");
                 return bleedingBuffDefinition;
             }
+            if (resourceName == "Stun")
+            {
+                if (stunBuffDefinition == null)
+                    stunBuffDefinition = Resources.Load<global::CombatBuffDefinition>("Combat/Buffs/Stun");
+                return stunBuffDefinition;
+            }
+            if (resourceName == "Regeneration")
+            {
+                if (regenerationBuffDefinition == null)
+                    regenerationBuffDefinition = Resources.Load<global::CombatBuffDefinition>("Combat/Buffs/Regeneration");
+                return regenerationBuffDefinition;
+            }
+            if (resourceName == "Wood")
+            {
+                if (woodBuffDefinition == null)
+                    woodBuffDefinition = Resources.Load<global::CombatBuffDefinition>("Combat/Buffs/Wood");
+                return woodBuffDefinition;
+            }
+            if (resourceName == "Cleverness")
+            {
+                if (clevernessBuffDefinition == null)
+                    clevernessBuffDefinition = Resources.Load<global::CombatBuffDefinition>("Combat/Buffs/Cleverness");
+                return clevernessBuffDefinition;
+            }
+            if (resourceName == "Bind")
+            {
+                if (bindBuffDefinition == null)
+                    bindBuffDefinition = Resources.Load<global::CombatBuffDefinition>("Combat/Buffs/Bind");
+                return bindBuffDefinition;
+            }
             if (resourceName == "Scales")
             {
                 if (scalesBuffDefinition == null)
@@ -67,46 +97,92 @@ namespace CardOpen.Prototype
         }
         public bool EditorDebugAddRelic(global::CombatRelicDefinition relic)
         {
-            if (relic == null || ownedRelics.Contains(relic)) return false;
+            if (relic == null) return false;
             AddRelic(relic);
             combatRelicVisualHash = int.MinValue;
             return true;
         }
         private void AddRelic(global::CombatRelicDefinition relic)
         {
-            if (relic != null && !ownedRelics.Contains(relic)) ownedRelics.Add(relic);
+            if (relic == null) return;
+            ownedRelics.Add(relic);
+            // Refresh the active combat hand so relic-adjusted damage is reflected immediately.
+            RefreshLocalizedCardDisplays();
+        }
+        private bool HasCombatRelicEffect(global::CombatRelicEffect effect)
+        {
+            for (int i = 0; i < ownedRelics.Count; i++)
+            {
+                global::CombatRelicDefinition relic = ownedRelics[i];
+                if (relic != null && relic.Effect == effect) return true;
+            }
+            return false;
         }
         private void ResetRelicTurnState()
         {
-            relicDamagePercentThisTurn = 0;
+            relicDamageBonusThisTurn = 0;
             combatRelicVisualHash = int.MinValue;
+        }
+        private void RollGreenDiceDamageMultiplier(StoredCard card)
+        {
+            if (card == null || card.Color != global::CardColor.Green) return;
+            float multiplier = 1f;
+            for (int i = 0; i < ownedRelics.Count; i++)
+            {
+                global::CombatRelicDefinition relic = ownedRelics[i];
+                if (relic == null || relic.Effect != global::CombatRelicEffect.GreenCardRandomAttackDamagePercent) continue;
+                int selectedTens = UnityEngine.Random.Range(2, 13);
+                multiplier *= 1f + selectedTens * 0.1f;
+            }
+            card.GreenDiceDamageMultiplier = multiplier;
         }
         private void TriggerCardUseRelics()
         {
+            // Multiple Magitech Engines on the same trigger add their flat bonuses first.
+            int engineBonusThisUse = 0;
             for (int i = 0; i < ownedRelics.Count; i++)
             {
                 global::CombatRelicDefinition relic = ownedRelics[i];
                 if (relic != null && relic.Effect == global::CombatRelicEffect.CardUseDamagePercent)
-                    relicDamagePercentThisTurn += relic.Amount;
+                    engineBonusThisUse += relic.Amount;
             }
+            relicDamageBonusThisTurn += engineBonusThisUse;
+            if (engineBonusThisUse > 0) RefreshCombatHandCardDescriptions();
+            // Magitech Engine bonuses stack additively and are applied as flat damage.
             combatRelicVisualHash = int.MinValue;
         }
         private int GetRelicModifiedDamage(StoredCard card, int damage)
         {
-            if (damage <= 0) return damage;
+            if (damage <= 0 || card == null) return damage;
+            float modifiedDamage = damage;
             for (int i = 0; i < ownedRelics.Count; i++)
             {
                 global::CombatRelicDefinition relic = ownedRelics[i];
                 if (relic == null || card == null) continue;
+                if (relic.Effect == global::CombatRelicEffect.AllCardAttackDamagePlusTwo)
+                    modifiedDamage += relic.Amount;
                 bool matchesColor = (relic.Effect == global::CombatRelicEffect.GreenCardFlatDamage && card.Color == global::CardColor.Green)
                     || (relic.Effect == global::CombatRelicEffect.RedCardFlatDamage && card.Color == global::CardColor.Red)
                     || (relic.Effect == global::CombatRelicEffect.BlueCardFlatDamage && card.Color == global::CardColor.Blue)
                     || (relic.Effect == global::CombatRelicEffect.BlackWhiteCardFlatDamage && (card.Color == global::CardColor.Black || card.Color == global::CardColor.White));
-                if (matchesColor) damage += relic.Amount;
+                if (matchesColor) modifiedDamage += relic.Amount;
             }
-            return relicDamagePercentThisTurn > 0
-                ? Mathf.RoundToInt(damage * (100f + relicDamagePercentThisTurn) / 100f)
-                : damage;
+            modifiedDamage += relicDamageBonusThisTurn;
+            if (card.Color == global::CardColor.Green && card.GreenDiceDamageMultiplier > 0f && card.GreenDiceDamageMultiplier != 1f)
+                modifiedDamage *= card.GreenDiceDamageMultiplier;
+            return Mathf.RoundToInt(modifiedDamage);
+        }
+        private void RefreshCombatHandCardDescriptions()
+        {
+            if (restStageActive || eventChoiceActive || shopRewardOpeningActive || rewardChoiceActive || shopChoiceActive) return;
+            int count = Mathf.Min(cards.Count, currentPackCards.Count);
+            for (int i = 0; i < count; i++)
+            {
+                CardVisual visual = cards[i];
+                StoredCard card = currentPackCards[i];
+                if (visual == null || card == null || card.Data == null) continue;
+                visual.SetDisplayDescription(card.Data, GetHandCardDisplayDescription(card), IsEnglishUi, string.Empty);
+            }
         }
         private string GetHandCardDisplayDescription(StoredCard card)
         {
@@ -123,9 +199,13 @@ namespace CardOpen.Prototype
                 string originalAmount = ability.Amount.ToString();
                 string damageMarker = IsEnglishUi ? "damage" : "피해";
                 int markerIndex = description.IndexOf(damageMarker, StringComparison.OrdinalIgnoreCase);
-                int amountIndex = markerIndex >= 0
-                    ? description.IndexOf(originalAmount, markerIndex + damageMarker.Length, StringComparison.Ordinal)
-                    : -1;
+                int amountIndex = -1;
+                if (markerIndex >= 0)
+                {
+                    // Most descriptions place the amount before the word damage/피해.
+                    int beforeIndex = description.LastIndexOf(originalAmount, markerIndex, StringComparison.Ordinal);
+                    amountIndex = beforeIndex >= 0 ? beforeIndex : description.IndexOf(originalAmount, markerIndex + damageMarker.Length, StringComparison.Ordinal);
+                }
                 if (amountIndex >= 0) description = description.Substring(0, amountIndex) + modified + description.Substring(amountIndex + originalAmount.Length);
             }
             return description;
@@ -152,6 +232,7 @@ namespace CardOpen.Prototype
         }
         private void HandleStartingHandPointer(Vector2 screenPoint, Event inputEvent)
         {
+            if (leafMeteorResolving) { inputEvent.Use(); return; }
             Camera camera = Camera.main;
             if (camera == null) return;
             if (inputEvent.type == EventType.MouseDown)
@@ -484,7 +565,8 @@ namespace CardOpen.Prototype
         }
         private int GetEnemyActionBuffCount(EnemyState enemy)
         {
-            if (enemy == null || enemy.Definition == null) return 0;
+            if (enemy == null || enemy.Definition == null || enemy.HasSummonAction) return 0;
+            if (enemy.IsSmallStone) return 1;
             if (!enemy.Definition.HasActionAbilities) return enemy.BleedingStacks > 0 ? 1 : 0;
             int count = 0;
             for (int i = 0; i < enemy.Definition.Abilities.Count; i++)
@@ -513,7 +595,13 @@ namespace CardOpen.Prototype
             List<CombatBuffListVisual.Entry> output)
         {
             output.Clear();
-            if (enemy == null || enemy.Definition == null) return;
+            if (enemy == null || enemy.Definition == null || enemy.HasSummonAction) return;
+            if (enemy.IsSmallStone)
+            {
+                output.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition(enemy.SmallStoneShieldAction ? "Shield" : "Stun"),
+                    enemy.SmallStoneShieldAction ? 30 : 1));
+                return;
+            }
             if (!enemy.Definition.HasActionAbilities)
             {
                 if (enemy.BleedingStacks > 0)
@@ -537,12 +625,16 @@ namespace CardOpen.Prototype
             }
         }
         private void GetEnemyActionUiPositions(EnemyState enemy, float x, float width,
-            out float countdownX, out float damageX, out float bleedingX)
+            out float countdownX, out float damageX, out float healX, out float bleedingX)
         {
             int actionCount = 1;
             bool hasDamage = enemy != null && enemy.ActionDamage > 0;
+            bool hasHeal = enemy != null && enemy.Definition != null
+                && (enemy.SelfHealAmount > 0
+                    || enemy.AllEnemyHealAmount > 0 || enemy.HasSummonAction);
             int buffCount = GetEnemyActionBuffCount(enemy);
             if (hasDamage) actionCount++;
+            if (hasHeal) actionCount++;
             actionCount += buffCount;
             const float actionSpacing = 64f;
             float nextX = x + width * 0.5f - (actionCount - 1) * actionSpacing * 0.5f;
@@ -550,11 +642,15 @@ namespace CardOpen.Prototype
             nextX += actionSpacing;
             damageX = hasDamage ? nextX : float.NaN;
             if (hasDamage) nextX += actionSpacing;
+            healX = hasHeal ? nextX : float.NaN;
+            if (hasHeal) nextX += actionSpacing;
             bleedingX = buffCount > 0 ? nextX : float.NaN;
         }
         private bool TryGetHoveredEnemyAction(Vector2 screenPoint, out EnemyState enemy,
-            out PlannedActionInfo actionInfo, out Rect actionAnchor)
+            out PlannedActionInfo actionInfo, out global::CombatBuffDefinition actionBuffDefinition,
+            out Rect actionAnchor)
         {
+            actionBuffDefinition = null;
             Vector2 point = ScreenToReferencePoint(screenPoint);
             float topY = GetEnemyUiTopOffset();
             for (int i = 0; i < enemies.Count; i++)
@@ -563,10 +659,34 @@ namespace CardOpen.Prototype
                 if (candidate == null || candidate.IsDefeated) continue;
                 float x = GetEnemyUiX(i);
                 float width = IsPortraitUi ? 220f : 240f;
-                GetEnemyActionUiPositions(candidate, x, width, out float countdownX, out float damageX, out float bleedingX);
+                GetEnemyActionUiPositions(candidate, x, width, out float countdownX, out float damageX,
+                    out float healX, out float bleedingX);
                 Rect countdownRect = new Rect(countdownX - 24f, 150f + topY, 48f, 48f);
                 Rect damageRect = new Rect(damageX - 24f, 150f + topY, 48f, 48f);
+                Rect healRect = new Rect(healX - 24f, 150f + topY, 48f, 48f);
                 Rect bleedingRect = new Rect(bleedingX - 24f, 150f + topY, 48f, 48f);
+                if (i < canvasEnemyActionBuffLists.Count)
+                {
+                    CanvasIconList actionBuffList = canvasEnemyActionBuffLists[i];
+                    if (actionBuffList != null && actionBuffList.Root != null && actionBuffList.Root.activeInHierarchy)
+                    {
+                        enemyActionBuffEntries.Clear();
+                        CollectEnemyActionBuffEntries(candidate, enemyActionBuffEntries);
+                        for (int buffIndex = 0; buffIndex < enemyActionBuffEntries.Count
+                            && buffIndex < actionBuffList.Slots.Count; buffIndex++)
+                        {
+                            CanvasIconSlot slot = actionBuffList.Slots[buffIndex];
+                            if (slot == null || slot.Root == null || !slot.Root.activeInHierarchy
+                                || !TryGetCanvasIconReferenceRect(slot.Icon, out Rect canvasBuffRect)
+                                || !canvasBuffRect.Contains(point)) continue;
+                            enemy = candidate;
+                            actionInfo = PlannedActionInfo.Buff;
+                            actionBuffDefinition = enemyActionBuffEntries[buffIndex].Definition;
+                            actionAnchor = canvasBuffRect;
+                            return actionBuffDefinition != null;
+                        }
+                    }
+                }
                 if (countdownRect.Contains(point))
                 {
                     enemy = candidate;
@@ -581,20 +701,35 @@ namespace CardOpen.Prototype
                     actionAnchor = damageRect;
                     return true;
                 }
-                if (candidate.BleedingStacks > 0 && bleedingRect.Contains(point))
+                int selfHeal = candidate.Definition != null
+                    ? candidate.SelfHealAmount : 0;
+                int allHeal = candidate.Definition != null
+                    ? candidate.AllEnemyHealAmount : 0;
+                if ((selfHeal > 0 || allHeal > 0 || candidate.HasSummonAction) && healRect.Contains(point))
                 {
                     enemy = candidate;
-                    actionInfo = PlannedActionInfo.Bleeding;
-                    actionAnchor = bleedingRect;
+                    actionInfo = candidate.HasSummonAction ? PlannedActionInfo.Summon : (allHeal > 0 ? PlannedActionInfo.HealAllEnemies : PlannedActionInfo.HealSelf);
+                    actionAnchor = healRect;
                     return true;
+                }
+                if (GetEnemyActionBuffCount(candidate) > 0 && bleedingRect.Contains(point))
+                {
+                    enemy = candidate;
+                    actionInfo = PlannedActionInfo.Buff;
+                    enemyActionBuffEntries.Clear();
+                    CollectEnemyActionBuffEntries(candidate, enemyActionBuffEntries);
+                    actionBuffDefinition = enemyActionBuffEntries.Count > 0
+                        ? enemyActionBuffEntries[0].Definition : GetCombatBuffDefinition("Bleeding");
+                    actionAnchor = bleedingRect;
+                    return actionBuffDefinition != null;
                 }
             }
             enemy = null;
             actionInfo = PlannedActionInfo.Countdown;
+            actionBuffDefinition = null;
             actionAnchor = default;
             return false;
         }
-
         private bool TryGetCanvasIconReferenceRect(Image icon, out Rect iconRect)
         {
             iconRect = default;
@@ -646,7 +781,39 @@ namespace CardOpen.Prototype
                     }
                     buffSlot++;
                 }
-                if (enemy.Scales > 0)
+                if (enemy.Regeneration > 0)
+                {
+                    Rect iconRect = new Rect(x + 18f + buffSlot * 52f - scrollX, 349f + topY, 44f, 40f);
+                    if (iconRect.Contains(point))
+                    {
+                        definition = GetCombatBuffDefinition("Regeneration");
+                        iconAnchor = iconRect;
+                        return definition != null;
+                    }
+                    buffSlot++;
+                }
+                if (enemy.Wood > 0)
+                {
+                    Rect iconRect = new Rect(x + 18f + buffSlot * 52f - scrollX, 349f + topY, 44f, 40f);
+                    if (iconRect.Contains(point))
+                    {
+                        definition = GetCombatBuffDefinition("Wood");
+                        iconAnchor = iconRect;
+                        return definition != null;
+                    }
+                    buffSlot++;
+                }
+                if (enemy.Cleverness > 0)
+                {
+                    Rect iconRect = new Rect(x + 18f + buffSlot * 52f - scrollX, 349f + topY, 44f, 40f);
+                    if (iconRect.Contains(point))
+                    {
+                        definition = GetCombatBuffDefinition("Cleverness");
+                        iconAnchor = iconRect;
+                        return definition != null;
+                    }
+                    buffSlot++;
+                }                if (enemy.Scales > 0)
                 {
                     Rect iconRect = new Rect(x + 18f + buffSlot * 52f - scrollX, 349f + topY, 44f, 40f);
                     if (iconRect.Contains(point))
@@ -686,12 +853,30 @@ namespace CardOpen.Prototype
                 iconAnchor = shieldRect;
                 return definition != null;
             }
+            if (canvasPlayerBuffList != null && canvasPlayerBuffList.Root != null
+                && canvasPlayerBuffList.Root.activeInHierarchy)
+            {
+                int count = Mathf.Min(playerBuffEntries.Count, canvasPlayerBuffList.Slots.Count);
+                for (int i = 0; i < count; i++)
+                {
+                    CombatBuffListVisual.Entry entry = playerBuffEntries[i];
+                    CanvasIconSlot canvasSlot = canvasPlayerBuffList.Slots[i];
+                    if (entry.Definition == null || entry.Amount <= 0 || canvasSlot == null || canvasSlot.Root == null
+                        || !canvasSlot.Root.activeInHierarchy
+                        || !TryGetCanvasIconReferenceRect(canvasSlot.Icon, out Rect canvasBuffRect)
+                        || !canvasBuffRect.Contains(point)) continue;
+                    definition = entry.Definition;
+                    iconAnchor = canvasBuffRect;
+                    return true;
+                }
+                return false;
+            }
             const float barX = 24f;
             const float barY = 420f;
             const float barWidth = 300f;
             int slot = 0;
-            global::CombatBuffDefinition[] definitions = { GetCombatBuffDefinition("Burn"), GetCombatBuffDefinition("Scales"), GetCombatBuffDefinition("Bleeding") };
-            int[] counts = { playerBurn, playerScales, playerBleedingStacks.Count };
+            global::CombatBuffDefinition[] definitions = { GetCombatBuffDefinition("Burn"), GetCombatBuffDefinition("Wood"), GetCombatBuffDefinition("Regeneration"), GetCombatBuffDefinition("Stun"), GetCombatBuffDefinition("Bind"), GetCombatBuffDefinition("Scales"), GetCombatBuffDefinition("Bleeding") };
+            int[] counts = { playerBurn, playerWood, playerRegeneration, playerStun, playerBindDuration, playerScales, playerBleedingStacks.Count };
             for (int i = 0; i < definitions.Length; i++)
             {
                 if (counts[i] <= 0) continue;
@@ -758,7 +943,7 @@ namespace CardOpen.Prototype
             if (IsTargetedSpell(usedStoredCard)
                 && (targetEnemyIndex < 0 || targetEnemyIndex >= enemies.Count || enemies[targetEnemyIndex].IsDefeated))
             { RestoreStartingHandCard(index); return; }
-            int castCount = enhancedCast ? 2 : 1;
+            int castCount = enhancedCast && !IsLeafMeteorCard(usedStoredCard) ? 2 : 1;
             CardVisual usedCard = cards[index];
             global::CardData usedData = usedStoredCard != null ? usedStoredCard.Data : null;
             Vector3 startPosition = usedCard.transform.position;
@@ -774,12 +959,12 @@ namespace CardOpen.Prototype
             usedPileCard.gameObject.SetActive(true);
             if (usedPilePlaceholder != null) usedPilePlaceholder.gameObject.SetActive(usedPileCard == null);
             TriggerCardUseRelics();
-            ResolveUsedCardCast(usedStoredCard, castCount, targetEnemyIndex);
+            ResolveUsedCardCast(usedStoredCard, castCount, targetEnemyIndex, enhancedCast);
             lastUsedCard = usedStoredCard;
             hasPlayedCardThisTurn = true;
             usedCastCount += castCount;
             if (enhancedCast)
-                AddScorePopup(Ui("강화 시전!\n2회 사용", "Enhanced cast!\nCounts as 2 uses"),
+                AddScorePopup(IsLeafMeteorCard(usedStoredCard) ? Ui("강화 시전!\n피해량 11", "Enhanced cast!\n11 damage") : Ui("강화 시전!\n2회 사용", "Enhanced cast!\nCounts as 2 uses"),
                     new Color(1f, 0.76f, 0.18f), Time.unscaledTime, scorePopups.Count, 0);
             cardIndex = Mathf.Clamp(index, 0, Mathf.Max(0, cards.Count - 1));
             usedPileExpanded = false;
@@ -787,6 +972,11 @@ namespace CardOpen.Prototype
             if (usedPileRoutine != null) StopCoroutine(usedPileRoutine);
             usedPileRoutine = StartCoroutine(AnimateCardIntoUsedPile(usedCard, startPosition));
         }
+        private bool IsLeafMeteorCard(StoredCard card)
+        {
+            return card != null && card.CombatType != null && card.CombatType.name == "LeafMeteor";
+        }
+
         private void DiscardStartingHandCard(int index)
         {
             if (index < 0 || index >= cards.Count || cards[index] == null) return;
@@ -815,7 +1005,30 @@ namespace CardOpen.Prototype
             hasPlayedCardThisTurn = firstCardState;
             usedCastCount = castState;
         }
-        private void ResolveUsedCardCast(StoredCard card, int castCount, int targetEnemyIndex)
+        private IEnumerator ResolveLeafMeteorSequentially(StoredCard card, global::CombatCardAbility ability,
+            string koreanName, string englishName, bool enhancedCast)
+        {
+            int baseDamage = enhancedCast && IsLeafMeteorCard(card) ? 11 : ability.Amount;
+            int discardedCount = 0;
+            while (cards.Count > 0)
+            {
+                int before = cards.Count;
+                DiscardStartingHandCard(0);
+                if (cards.Count >= before) break;
+                discardedCount++;
+                int damage = GetRelicModifiedDamage(card, baseDamage);
+                for (int enemyIndex = 0; enemyIndex < enemies.Count; enemyIndex++)
+                    if (GetLivingEnemy(enemyIndex) != null && damage > 0)
+                        DealDamage(enemyIndex, damage, koreanName, englishName);
+                yield return new WaitForSecondsRealtime(0.1f);
+            }
+            AddScorePopup(Ui(koreanName + "\n잎 " + discardedCount + "장 버림",
+                englishName + "\nDiscarded " + discardedCount + " card(s)"),
+                new Color(1f, 0.72f, 0.25f), Time.unscaledTime, scorePopups.Count, 0);
+            leafMeteorResolving = false;
+            RefreshHandCardInteractionStates();
+        }
+        private void ResolveUsedCardCast(StoredCard card, int castCount, int targetEnemyIndex, bool enhancedCast)
         {
             if (card == null || card.CombatType == null || card.CombatType.Abilities == null) return;
             for (int cast = 0; cast < Mathf.Max(1, castCount); cast++)
@@ -823,28 +1036,54 @@ namespace CardOpen.Prototype
                 for (int i = 0; i < card.CombatType.Abilities.Count; i++)
                 {
                     global::CombatCardAbility ability = card.CombatType.Abilities[i];
-                    if (ability != null) ResolveSpellEffect(card, ability, targetEnemyIndex);
+                    if (ability != null) ResolveSpellEffect(card, ability, targetEnemyIndex, enhancedCast);
                 }
             }
             previousRevealedCard = card;
             RefreshHandCardInteractionStates();
         }
         private void ResolveSpellEffect(StoredCard card, global::CombatCardAbility ability,
-            int selectedEnemyIndex)
+            int selectedEnemyIndex, bool enhancedCast)
         {
             string koreanName = GetStoredCardDisplayName(card);
             string englishName = card != null && card.CombatType != null
                 && !string.IsNullOrEmpty(card.CombatType.EnglishName)
                 ? card.CombatType.EnglishName : card.Data.GetLocalizedName(true);
+            if (ability.Effect == global::CombatAbilityEffect.DiscardHandAndDamageAll)
+            {
+                leafMeteorResolving = true;
+                RefreshHandCardInteractionStates();
+                StartCoroutine(ResolveLeafMeteorSequentially(card, ability, koreanName, englishName, enhancedCast));
+                return;
+            }
             if (ability.Effect == global::CombatAbilityEffect.DrawCards)
             {
                 int drawnCount = 0;
                 for (int i = 0; i < ability.Amount; i++)
                     if (DrawStarterCardToHand()) drawnCount++;
                 if (drawnCount > 0)
-                    AddScorePopup(Ui(koreanName + "\n카드 " + drawnCount + "장 드로우",
+                    AddScorePopup(Ui(koreanName + "\n잎 " + drawnCount + "장 드로우",
                         englishName + "\nDraw " + drawnCount + " card(s)"),
                         new Color(0.45f, 0.9f, 1f), Time.unscaledTime, scorePopups.Count, 0);
+                return;
+            }
+                        if (ability.Effect == global::CombatAbilityEffect.GainShieldAfterUses)
+            {
+                lightStoryUseCount++;
+                int requiredUses = Mathf.Max(1, ability.UsesRequired);
+                if (lightStoryUseCount < requiredUses)
+                {
+                    AddScorePopup(Ui(koreanName + "\n" + lightStoryUseCount + " / " + requiredUses,
+                        englishName + "\n" + lightStoryUseCount + " / " + requiredUses),
+                        new Color(0.8f, 0.9f, 1f), Time.unscaledTime, scorePopups.Count, 0);
+                    return;
+                }
+                lightStoryUseCount = 0;
+                int shieldAmount = Mathf.Max(0, ability.Amount);
+                playerShield += shieldAmount;
+                AddScorePopup(Ui(koreanName + "\n보호막 +" + shieldAmount,
+                    englishName + "\nShield +" + shieldAmount),
+                    new Color(0.65f, 0.85f, 1f), Time.unscaledTime, scorePopups.Count, 0);
                 return;
             }
             if (ability.Effect == global::CombatAbilityEffect.HealAfterUses)
@@ -881,7 +1120,10 @@ namespace CardOpen.Prototype
                     int damage = GetRelicModifiedDamage(card, ability.Amount);
                     if (ability.DoubleAmountAgainstShield && target != null && target.Shield > 0) damage *= 2;
                     bool ignoresShield = ability.Effect == global::CombatAbilityEffect.IgnoreShieldDamage;
-                    DealDamage(i, damage, koreanName, englishName, ignoresShield);
+                    int healthDamage = DealDamage(i, damage, koreanName, englishName, ignoresShield);
+                    if (card.Color == global::CardColor.Red && healthDamage > 0)
+                        ApplyFlamingSwordBurn(i, healthDamage);
+                    ApplyBlueBlueEffect(card, i, damage);
                 }
                 else if (ability.Effect == global::CombatAbilityEffect.Burn)
                     AddBurn(i, ability.Amount);
@@ -901,14 +1143,16 @@ namespace CardOpen.Prototype
         {
             return enemyIndex >= 0 && enemyIndex < enemies.Count && !enemies[enemyIndex].IsDefeated ? enemies[enemyIndex] : null;
         }
-        private void DealDamage(int enemyIndex, int amount, string koreanSource, string englishSource, bool ignoreShield = false)
+        private int DealDamage(int enemyIndex, int amount, string koreanSource, string englishSource, bool ignoreShield = false)
         {
             EnemyState enemy = GetLivingEnemy(enemyIndex);
-            if (enemy == null || amount <= 0) return;
+            if (enemy == null || amount <= 0) return 0;
             int shieldDamage = ignoreShield ? 0 : Mathf.Min(enemy.Shield, amount);
             enemy.Shield -= shieldDamage;
             int healthDamage = ignoreShield ? amount : amount - shieldDamage;
+            healthDamage = Mathf.Min(enemy.Health, healthDamage);
             enemy.Health = Mathf.Max(0, enemy.Health - healthDamage);
+            UpdateClevernessAction(enemy);
             string result = ignoreShield
                 ? Ui(koreanSource + "\n방어 무시 피해 " + healthDamage, englishSource + "\nIgnore-shield damage " + healthDamage)
                 : shieldDamage > 0 ? Ui(koreanSource + "\n보호막 -" + shieldDamage, englishSource + "\nShield -" + shieldDamage)
@@ -920,6 +1164,33 @@ namespace CardOpen.Prototype
                 startingHandVisible = false;
                 BeginCombatVictoryAfterDefeatDelay();
             }
+            return healthDamage;
+        }
+        private void UpdateClevernessAction(EnemyState enemy)
+        {
+            if (enemy == null || enemy.IsDefeated || enemy.Definition == null || enemy.Cleverness <= 0 || enemy.ClevernessActionChanged) return;
+            if (enemy.Definition.name != "GlassSnake" || enemy.Health * 2 >= enemy.MaximumHealth) return;
+            enemy.ClevernessActionChanged = true;
+            enemy.ChangedActionHealAmount = Mathf.Max(0, enemy.Definition.GetActionDamage());
+            AddScorePopup(Ui(enemy.Name + "\n영리함: 회복으로 전환", enemy.EnglishName + "\nCleverness: switches to Heal"),
+                new Color(0.45f, 0.85f, 1f), Time.unscaledTime, scorePopups.Count, 0);
+        }
+        private void ApplyFlamingSwordBurn(int enemyIndex, int healthDamage)
+        {
+            if (!HasCombatRelicEffect(global::CombatRelicEffect.RedCardHealthDamageAppliesBurn)) return;
+            AddBurn(enemyIndex, healthDamage);
+        }
+        private void ApplyBlueBlueEffect(StoredCard card, int targetEnemyIndex, int damage)
+        {
+            if (card == null || card.Color != global::CardColor.Blue
+                || !HasCombatRelicEffect(global::CombatRelicEffect.BlueCardShieldBreakAndSplash)) return;
+            EnemyState target = GetLivingEnemy(targetEnemyIndex);
+            if (target != null) target.Shield = 0;
+            int splashDamage = Mathf.RoundToInt(damage * 0.5f);
+            if (splashDamage <= 0) return;
+            for (int enemyIndex = 0; enemyIndex < enemies.Count; enemyIndex++)
+                if (GetLivingEnemy(enemyIndex) != null)
+                    DealDamage(enemyIndex, splashDamage, "파란파란", "Blue Blue");
         }
         private void AddBurn(int enemyIndex, int amount) { EnemyState enemy = GetLivingEnemy(enemyIndex); if (enemy != null) enemy.Burn += Mathf.Max(0, amount); }
         private void AddScales(int enemyIndex, int amount) { EnemyState enemy = GetLivingEnemy(enemyIndex); if (enemy != null) enemy.Scales += Mathf.Max(0, amount); }
@@ -943,6 +1214,33 @@ namespace CardOpen.Prototype
                 }
             }
         }
+        private void ApplyEnemyStunAtTurnStart()
+        {
+            stunnedEnemyIndicesThisTurn.Clear();
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                EnemyState enemy = GetLivingEnemy(i);
+                if (enemy == null || enemy.Stun <= 0) continue;
+                enemy.Stun--;
+                stunnedEnemyIndicesThisTurn.Add(i);
+                AddScorePopup(Ui(enemy.Name + "\n기절", enemy.EnglishName + "\nStunned"),
+                    new Color(0.95f, 0.82f, 0.28f), Time.unscaledTime, scorePopups.Count, 0);
+            }
+        }
+        private void ApplyRegenerationAtTurnStart()
+        {
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                EnemyState enemy = GetLivingEnemy(i);
+                if (enemy == null || enemy.Regeneration <= 0) continue;
+                int before = enemy.Health;
+                enemy.Health = Mathf.Min(enemy.MaximumHealth, enemy.Health + enemy.Regeneration);
+                int recovered = enemy.Health - before;
+                if (recovered > 0)
+                    AddScorePopup(Ui(enemy.Name + "\n체력 +" + recovered, enemy.EnglishName + "\nHP +" + recovered),
+                        new Color(0.4f, 1f, 0.58f), Time.unscaledTime, scorePopups.Count, 0);
+            }
+        }
         private void ApplyScalesAtTurnStart()
         {
             for (int i = 0; i < enemies.Count; i++)
@@ -958,8 +1256,15 @@ namespace CardOpen.Prototype
                 EnemyState enemy = GetLivingEnemy(i);
                 if (enemy == null || enemy.Burn <= 0) continue;
                 int damage = enemy.Burn;
-                enemy.Burn /= 2;
                 DealDamage(i, damage, "화상", "Burn");
+                if (enemy.IsDefeated) continue;
+                if (enemy.Wood > 0)
+                {
+                    enemy.Burn += 6;
+                    enemy.Wood--;
+                }
+                else
+                    enemy.Burn /= 2;
             }
         }
         private IEnumerator AnimateCardIntoUsedPile(CardVisual card, Vector3 startPosition)
@@ -1035,6 +1340,7 @@ namespace CardOpen.Prototype
         private bool CanUseCardAtIndex(int index, out bool enhancedCast)
         {
             enhancedCast = false;
+            if (leafMeteorResolving) return false;
             if (index < 0 || index >= currentPackCards.Count || currentPackCards[index] == null) return false;
             StoredCard candidate = currentPackCards[index];
             StoredCard topDiscard = GetTopCombatDiscardCard();
@@ -1186,7 +1492,7 @@ namespace CardOpen.Prototype
                 CardVisual card = cards[i];
                 if (card == null || !card.gameObject.activeSelf) continue;
                 bool isHovered = card == highlightedHandCard;
-                Vector3 targetPosition = startingHandHomePositions[i] + (isHovered ? Vector3.up * 1.84f : Vector3.zero);
+                Vector3 targetPosition = startingHandHomePositions[i] + (isHovered ? Vector3.up * 2.15f : Vector3.zero);
                 float targetScale = CurrentHandCardScale * (isHovered ? 1.20f : 1f);
                 card.transform.position = Vector3.Lerp(card.transform.position, targetPosition, transition);
                 card.transform.localScale = Vector3.Lerp(card.transform.localScale, Vector3.one * targetScale, transition);
@@ -1440,7 +1746,8 @@ namespace CardOpen.Prototype
         }
         private void CreateBackground(Camera camera)
         {
-            Texture2D texture = Resources.Load<Texture2D>("Textures/BattleBackground");
+            string backgroundPath = currentStageChapter >= 3 ? "Textures/Chapter3Background" : currentStageChapter >= 2 ? "Textures/Chapter2Background" : "Textures/BattleBackground";
+            Texture2D texture = Resources.Load<Texture2D>(backgroundPath);
             if (texture == null) texture = Resources.Load<Texture2D>("Textures/SimpleBackground");
             if (texture == null || camera == null) return;
             background = new GameObject("2D Background");
@@ -1449,6 +1756,16 @@ namespace CardOpen.Prototype
                 new Vector2(0.5f, 0.5f), 100f);
             renderer.sortingOrder = -1000;
             LayoutBackground(camera);
+        }
+        private void UpdateChapterBackground()
+        {
+            if (background == null) return;
+            Texture2D texture = Resources.Load<Texture2D>(currentStageChapter >= 3 ? "Textures/Chapter3Background" : currentStageChapter >= 2 ? "Textures/Chapter2Background" : "Textures/BattleBackground");
+            if (texture == null) return;
+            SpriteRenderer renderer = background.GetComponent<SpriteRenderer>();
+            if (renderer == null) return;
+            renderer.sprite = Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), 100f);
+            LayoutBackground(Camera.main);
         }
         private void LayoutBackground(Camera camera)
         {

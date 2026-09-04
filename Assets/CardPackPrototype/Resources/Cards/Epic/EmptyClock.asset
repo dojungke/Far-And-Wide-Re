@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: EmptyClock
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uD145\uBE48\uC2DC\uACC4"
-  Description: "카드를 뽑을 때마다 300점 획득"
+  Description: "잎을 뽑을 때마다 300점 획득"
   EnglishName: Empty Clock
   EnglishDescription: "Gain 300 points whenever a card is drawn."
   Rare: 3

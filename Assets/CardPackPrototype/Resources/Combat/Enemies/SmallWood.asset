@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de447bb1e154eab9000739e8d4f1221, type: 3}
+  m_Name: SmallWood
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyDefinition
+  EnemyName: "\uAF43 \uC694\uC815"
+  EnglishName: SmallWood
+  Image: {fileID: 2800000, guid: 8c5d591296eb83b41bf75da933f9e303, type: 3}
+  FallbackColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  MaximumHealth: 120
+  StartingBuffs:
+  - Buff: {fileID: 11400000, guid: 9c1d2e3f4a5b67889a0bc1d2e3f4a5b6, type: 2}
+    Amount: 3
+  ActionName: "\uACF5\uACA9"
+  EnglishActionName: Attack
+  ActionInterval: 2
+  Abilities:
+  - Target: 2
+    Effect: 3
+    Amount: 30
+    RelatedBuff: {fileID: 0}
+  AttackDamage: 15
+  BleedingStacks: 2

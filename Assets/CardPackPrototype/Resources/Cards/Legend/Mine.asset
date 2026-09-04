@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Mine
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "광산"
-  Description: "이 카드가 덱의 가장 왼쪽에 있으면 다음 팩의 모든 카드를 광석 카드로 대체"
+  Description: "이 잎이 덱의 가장 왼쪽에 있으면 다음 팩의 모든 잎을 광석 잎으로 대체"
   EnglishName: "Mine"
   EnglishDescription: "If this card is leftmost in the deck, replace every card in the next pack with a Mineral card."
   Rare: 4

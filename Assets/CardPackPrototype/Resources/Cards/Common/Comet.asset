@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Comet
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uC720\uC131"
-  Description: "카드를 뽑을 때마다 10점 획득\n중첩 제한 없이 합쳐짐"
+  Description: "잎을 뽑을 때마다 10점 획득\n중첩 제한 없이 합쳐짐"
   EnglishName: "Meteor"
   EnglishDescription: "Gain 10 points whenever a card is drawn.\nMerges without a stack limit."
   Rare: 0

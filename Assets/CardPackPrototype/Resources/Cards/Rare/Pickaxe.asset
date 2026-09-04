@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Pickaxe
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "곡괭이"
-  Description: "숫자가 2 이하인 카드를 뽑으면 카드팩 맨 뒤에 광석 카드 1장 생성\n팩당 최대 3회"
+  Description: "숫자가 2 이하인 잎을 뽑으면 잎팩 맨 뒤에 광석 잎 1장 생성\n팩당 최대 3회"
   EnglishName: "Pickaxe"
   EnglishDescription: "When a card numbered 2 or lower is drawn, generate 1 Mineral card at the end of the pack.\nUp to 3 times per pack."
   Rare: 2

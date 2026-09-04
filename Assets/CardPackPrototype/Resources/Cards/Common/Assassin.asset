@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Assassin
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uC554\uC0B4\uC790"
-  Description: "검정색 카드를 뽑으면 100점 획득\n무기를 1개 장착할 수 있다"
+  Description: "검정색 잎을 뽑으면 100점 획득\n무기를 1개 장착할 수 있다"
   EnglishName: "Assassin"
   EnglishDescription: "Gain 100 points when a black card is drawn.\nCan equip 1 weapon."
   Rare: 0

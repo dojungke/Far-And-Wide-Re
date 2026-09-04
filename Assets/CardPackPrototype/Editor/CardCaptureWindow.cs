@@ -21,7 +21,7 @@ public sealed class CardCaptureWindow : EditorWindow
     private int height = 2560;
     private int antiAliasing = 4;
 
-    [MenuItem("CardOpen/카드 고화질 PNG 저장")]
+    [MenuItem("CardOpen/잎 고화질 PNG 저장")]
     public static void Open()
     {
         OpenWithCard(Selection.activeObject as CardData);
@@ -29,7 +29,7 @@ public sealed class CardCaptureWindow : EditorWindow
 
     public static void OpenWithCard(CardData selectedCard)
     {
-        CardCaptureWindow window = GetWindow<CardCaptureWindow>("카드 PNG 저장");
+        CardCaptureWindow window = GetWindow<CardCaptureWindow>("잎 PNG 저장");
         if (selectedCard != null) window.card = selectedCard;
         window.minSize = new Vector2(390f, 430f);
         window.Show();
@@ -38,10 +38,10 @@ public sealed class CardCaptureWindow : EditorWindow
     private void OnGUI()
     {
         EditorGUILayout.Space(8f);
-        EditorGUILayout.LabelField("고화질 카드 PNG 저장", EditorStyles.boldLabel);
-        EditorGUILayout.HelpBox("게임의 카드 렌더링을 그대로 사용해 PNG로 저장합니다.", MessageType.Info);
+        EditorGUILayout.LabelField("고화질 잎 PNG 저장", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox("게임의 잎 렌더링을 그대로 사용해 PNG로 저장합니다.", MessageType.Info);
 
-        card = (CardData)EditorGUILayout.ObjectField("카드 데이터", card, typeof(CardData), false);
+        card = (CardData)EditorGUILayout.ObjectField("잎 데이터", card, typeof(CardData), false);
         color = (CardColor)EditorGUILayout.EnumPopup("색상", color);
         number = EditorGUILayout.IntSlider("숫자", number, 1, 6);
         useEnglish = EditorGUILayout.Toggle("영문", useEnglish);
@@ -72,7 +72,7 @@ public sealed class CardCaptureWindow : EditorWindow
         string defaultName = SanitizeFileName(string.IsNullOrWhiteSpace(localizedName) ? card.name : localizedName);
         if (captureBack) defaultName += "_Back";
         if (holographic && !captureBack) defaultName += "_Holographic";
-        string path = EditorUtility.SaveFilePanel("카드 PNG 저장", Application.dataPath,
+        string path = EditorUtility.SaveFilePanel("잎 PNG 저장", Application.dataPath,
             defaultName + ".png", "png");
         if (string.IsNullOrEmpty(path)) return;
 
@@ -87,7 +87,7 @@ public sealed class CardCaptureWindow : EditorWindow
         catch (Exception exception)
         {
             Debug.LogException(exception);
-            EditorUtility.DisplayDialog("카드 PNG 저장 실패", exception.Message, "확인");
+            EditorUtility.DisplayDialog("잎 PNG 저장 실패", exception.Message, "확인");
         }
     }
 
@@ -209,7 +209,7 @@ public sealed class CardCaptureWindow : EditorWindow
         Shader shader = Shader.Find(transparent ? "Universal Render Pipeline/Unlit" : "Universal Render Pipeline/Lit");
         if (shader == null) shader = Shader.Find(transparent ? "Unlit/Transparent" : "Standard");
         if (shader == null) shader = Shader.Find("Unlit/Texture");
-        if (shader == null) throw new InvalidOperationException("카드 캡처용 셰이더를 찾지 못했습니다.");
+        if (shader == null) throw new InvalidOperationException("잎 캡처용 셰이더를 찾지 못했습니다.");
 
         Material material = new Material(shader)
         {
@@ -321,7 +321,7 @@ public sealed class CardDataCaptureInspector : Editor
         EditorGUILayout.Space(8f);
         using (new EditorGUI.DisabledScope(targets.Length != 1))
         {
-            if (GUILayout.Button("고화질 카드 PNG 저장...", GUILayout.Height(30f)))
+            if (GUILayout.Button("고화질 잎 PNG 저장...", GUILayout.Height(30f)))
                 CardCaptureWindow.OpenWithCard(target as CardData);
         }
     }

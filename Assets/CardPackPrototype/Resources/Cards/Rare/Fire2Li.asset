@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Fire2Li
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uD654\uC774\uB9AC"
-  Description: "이 카드와 같은 색의 카드를 뽑으면 200점 획득\n붉은색 카드를 뽑으면 200점 획득"
+  Description: "이 잎과 같은 색의 잎을 뽑으면 200점 획득\n붉은색 잎을 뽑으면 200점 획득"
   EnglishName: "Flame Wolf"
   EnglishDescription: "When a card with the same color as this card is drawn, gain 200 points.\nWhen a red card is drawn, gain 200 points."
   Rare: 2

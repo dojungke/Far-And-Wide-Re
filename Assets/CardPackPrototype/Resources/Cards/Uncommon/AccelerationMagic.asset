@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: AccelerationMagic
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   Name: "\uAC00\uC18D \uB9C8\uBC95"
-  Description: "이 카드와 같은 색의 카드를 뽑으면 카드팩 맨 뒤에 무작위 일반 카드 1장 생성\n팩당 최대 1회 발동"
+  Description: "이 잎과 같은 색의 잎을 뽑으면 잎팩 맨 뒤에 무작위 일반 잎 1장 생성\n팩당 최대 1회 발동"
   EnglishName: "Acceleration Magic"
   EnglishDescription: "When a card with the same color as this card is drawn, add 1 random Common card to the end of the pack.\nTriggers once per pack."
   Rare: 1

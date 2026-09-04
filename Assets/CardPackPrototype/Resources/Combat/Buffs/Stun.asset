@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0fd871321fb24d4697246da5ecc34bab, type: 3}
+  m_Name: Stun
+  m_EditorClassIdentifier: Assembly-CSharp::CombatBuffDefinition
+  BuffName: "\uAE30\uC808"
+  Description: "\uCC28\uB840\uAC00 \uC2DC\uC791\uB418\uBA74 \uD574\uB2F9 \uCC28\uB840\uB97C
+    \uC989\uC2DC \uC885\uB8CC\uD558\uACE0 \uC218\uCE58\uAC00 1 \uAC10\uC18C\uD569\uB2C8\uB2E4."
+  EnglishName: Stun
+  EnglishDescription: At the start of the turn, immediately end that turn and reduce
+    this value by 1.
+  Image: {fileID: 2800000, guid: db16e6ceef364734db7480dbea9f4b50, type: 3}

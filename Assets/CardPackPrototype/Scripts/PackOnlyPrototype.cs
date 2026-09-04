@@ -30,7 +30,11 @@ namespace CardOpen.Prototype
         {
             Countdown,
             Damage,
-            Bleeding
+            Bleeding,
+            Buff,
+            HealSelf,
+            HealAllEnemies,
+            Summon
         }
         private sealed class EnemyState
         {
@@ -38,6 +42,15 @@ namespace CardOpen.Prototype
             public int Health;
             public int Shield;
             public int Burn;
+            public int Wood;
+            public int Regeneration;
+            public int Stun;
+            public int Cleverness;
+            public bool ClevernessActionChanged;
+            public int ChangedActionHealAmount;
+            public bool SmallStoneShieldAction = true;
+            public bool BeastLeaderSummonAction;
+            public bool SmallWoodSoloAttackAction;
             public int Scales;
             // Each Bleeding application has its own remaining duration.
             public readonly List<int> BleedingDurations = new List<int>();
@@ -46,10 +59,17 @@ namespace CardOpen.Prototype
             public string EnglishName => Definition != null ? Definition.EnglishName : string.Empty;
             public int MaximumHealth => Definition != null ? Mathf.Max(1, Definition.MaximumHealth) : 1;
             public int ActionInterval => Definition != null ? Mathf.Max(1, Definition.ActionInterval) : 1;
-            public int ActionDamage => Definition != null ? Definition.GetActionDamage() : 0;
+            public bool IsSmallStone => Definition != null && Definition.name == "SmallStone";
+            public bool IsBeastLeader => Definition != null && Definition.name == "LoadOfBeast";
+            public bool IsSmallWood => Definition != null && Definition.name == "SmallWood";
+            public bool HasSummonAction => IsBeastLeader && BeastLeaderSummonAction;
+            public bool HasSmallWoodSoloAttackAction => IsSmallWood && SmallWoodSoloAttackAction;
+            public int ActionDamage => ClevernessActionChanged || (IsSmallStone && SmallStoneShieldAction) || HasSummonAction ? 0 : (HasSmallWoodSoloAttackAction ? 10 : (Definition != null ? Definition.GetActionDamage() : 0));
+            public int SelfHealAmount => ClevernessActionChanged ? ChangedActionHealAmount : (Definition != null ? Definition.GetActionHealAmount(global::EnemyActionEffect.HealSelf) : 0);
+            public int AllEnemyHealAmount => HasSmallWoodSoloAttackAction ? 0 : (Definition != null ? Definition.GetActionHealAmount(global::EnemyActionEffect.HealAllEnemies) : 0);
             public int BleedingStacks => Definition != null ? Definition.GetActionBuffAmount("Bleeding") : 0;
-            public string ActionName => Definition != null ? Definition.ActionName : string.Empty;
-            public string EnglishActionName => Definition != null ? Definition.EnglishActionName : string.Empty;
+            public string ActionName => HasSummonAction ? "화이리 소환" : (HasSmallWoodSoloAttackAction ? "공격" : (ClevernessActionChanged ? "회복" : (IsSmallStone && SmallStoneShieldAction ? "보호막" : (Definition != null ? Definition.ActionName : string.Empty))));
+            public string EnglishActionName => HasSummonAction ? "Summon FireWolf" : (HasSmallWoodSoloAttackAction ? "Attack" : (ClevernessActionChanged ? "Heal" : (IsSmallStone && SmallStoneShieldAction ? "Shield" : (Definition != null ? Definition.EnglishActionName : string.Empty))));
             public bool IsDefeated => Health <= 0;
         }
 
@@ -62,6 +82,8 @@ namespace CardOpen.Prototype
             public TextMeshProUGUI ActionCountdownText;
             public Image ActionDamageIcon;
             public TextMeshProUGUI ActionDamageText;
+            public Image ActionHealIcon;
+            public TextMeshProUGUI ActionHealText;
             public TextMeshProUGUI Health;
             public Image HealthFill;
             public Image ShieldIcon;
@@ -85,6 +107,8 @@ namespace CardOpen.Prototype
             public global::CardColor Color;
             public int Number;
             public bool IsHolographic;
+            // Rolled once when this combat card enters the hand by drawing.
+            public float GreenDiceDamageMultiplier = 1f;
             public bool IsStoredInDeck;
             public int DeckSlot = -1;
             public int CombinedCopies = 1;
@@ -129,6 +153,7 @@ namespace CardOpen.Prototype
             public int CombinedCopies;
             public int CombinedHolographicCopies;
             public bool IsHolographic;
+            public float GreenDiceDamageMultiplier = 1f;
             public SharedCardData EquippedMagic;
             public SharedCardData EquippedWeapon;
             public SharedCardData[] InheritedRelics;
@@ -156,8 +181,9 @@ namespace CardOpen.Prototype
         private const int FallbackCardsPerPack = 5;
         private const int PacksPerGoal = 3;
         private const int MaxSimultaneousEnemies = 3;
-        private const int StartingHandSize = 5;
+        private const int BaseStartingHandSize = 5;
         private const int MaximumCombatHandSize = 10;
+        private int StartingHandSize => Mathf.Max(1, BaseStartingHandSize - (playerBindDuration > 0 ? 1 : 0)) + (HasCombatRelicEffect(global::CombatRelicEffect.CardStartingHandSizePlusOne) ? 1 : 0);
         private const int PlayerMaximumHealth = 100;
         private const int ScorePopupTrailCapacity = 5;
         private const string EditorShareBaseUrl = "https://dojungke.github.io/CardOpen/";
@@ -203,6 +229,8 @@ namespace CardOpen.Prototype
         private SpriteRenderer restCharacterRenderer;
         private GameObject combatPlayerCharacter;
         private SpriteRenderer combatPlayerCharacterRenderer;
+        private Sprite combatPlayerNormalSprite;
+        private Sprite combatPlayerStunnedSprite;
         private GameObject choiceCharacter;
         private SpriteRenderer choiceCharacterRenderer;
         private readonly List<Vector3> stageHandHomePositions = new List<Vector3>();
@@ -222,11 +250,15 @@ namespace CardOpen.Prototype
         private string pendingRewardContextTitle;
         private string pendingRewardContextMessage;
         private bool stageChapterInitialized;
+        private int currentStageChapter = 1;
+        private int completedStageCount;
         private bool firstStageChoiceBonusAvailable = true;
         private bool finalBossStageSpawned;
+        private bool pendingBossChapterTransition;
         private bool stageSelectionVisible;
         private bool restStageActive;
         private readonly List<EnemyState> enemies = new List<EnemyState>();
+        private readonly HashSet<int> stunnedEnemyIndicesThisTurn = new HashSet<int>();
         private int combatTurn;
         private int playerHealth = PlayerMaximumHealth;
         private int gold;
@@ -254,31 +286,46 @@ namespace CardOpen.Prototype
             public global::CombatRelicDefinition Relic;
         }
         private bool shopRewardOpeningActive;
+        private bool eventRewardOpeningActive;
         private ShopOffer pendingShopRewardOffer;
         private readonly List<ShopReward> shopRewardCards = new List<ShopReward>();
         private int theFoolUseCount;
+        private int lightStoryUseCount;
         private readonly List<int> playerBleedingStacks = new List<int>();
+        private int playerBindDuration;
         private int playerShield;
         private int playerBurn;
+        private int playerWood;
+        private int playerRegeneration;
+        private int playerStun;
         private int playerScales;
         private Texture2D clockTexture;
         private Texture2D attackTexture;
         private Texture2D bleedingTexture;
+        private Texture2D healTexture;
+        private Texture2D multiHealTexture;
+        private Texture2D summonTexture;
         private bool combatVisualAssetsLoaded;
         private int enemyVisualStatusHash = int.MinValue;
         private int enemyActionBuffVisualHash = int.MinValue;
         private global::CombatBuffDefinition shieldBuffDefinition;
         private global::CombatBuffDefinition burnBuffDefinition;
+        private global::CombatBuffDefinition woodBuffDefinition;
+        private global::CombatBuffDefinition regenerationBuffDefinition;
+        private global::CombatBuffDefinition stunBuffDefinition;
+        private global::CombatBuffDefinition clevernessBuffDefinition;
+        private global::CombatBuffDefinition bindBuffDefinition;
         private global::CombatBuffDefinition scalesBuffDefinition;
         private global::CombatBuffDefinition bleedingBuffDefinition;
         private global::CombatRelicDefinition goldCurrencyDefinition;
         private readonly List<global::CombatRelicDefinition> ownedRelics = new List<global::CombatRelicDefinition>();
-        private int relicDamagePercentThisTurn;
+        private int relicDamageBonusThisTurn;
         private readonly List<StoredCard> deckCards = new List<StoredCard>();
         private StoredCard previousRevealedCard;
         private StoredCard lastUsedCard;
         private int usedCastCount;
         private bool hasPlayedCardThisTurn;
+        private bool leafMeteorResolving;
         private StoredCard revealedMineralAbilityOwner;
         private readonly Dictionary<StoredCard, int> naturallyTriggeredNatureCounts = new Dictionary<StoredCard, int>();
         private readonly HashSet<StoredCard> pendingPackOpenNatureSources = new HashSet<StoredCard>();
@@ -339,7 +386,7 @@ namespace CardOpen.Prototype
         private GameObject canvasRunEndRoot;
         private TextMeshProUGUI canvasRunEndTitle;
         private TextMeshProUGUI canvasRunEndBody;
-        private Button canvasRunEndLeftButton;
+
         private Button canvasRunEndRightButton;
         private TextMeshProUGUI canvasPackChoiceTitle;
         private Button canvasLeftPackInfoButton;
@@ -541,6 +588,7 @@ namespace CardOpen.Prototype
         private GUIStyle settingsTitleStyle;
         private GUIStyle settingsLabelStyle;
         private bool sharedResultMode;
+        private bool challengeAbandoned;
         private bool sharedPackPreviewActive;
         private string sharedResultSnapshotJson;
         private string shareFeedback;
@@ -555,7 +603,11 @@ namespace CardOpen.Prototype
         {
             foreach (CardVisual card in cards)
             {
-                if (card != null) Destroy(card.gameObject);
+                if (card != null)
+                {
+                    card.gameObject.SetActive(false);
+                    Destroy(card.gameObject);
+                }
             }
 
             cards.Clear();
