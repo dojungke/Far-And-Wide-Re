@@ -510,6 +510,15 @@ namespace CardOpen.Prototype
         }
         private void StartNewRun()
         {
+            if (enemyTurnRoutine != null) StopCoroutine(enemyTurnRoutine);
+            enemyTurnRoutine = null;
+            StopEnemyVisualEffects();
+            enemies.Clear();
+            stunnedEnemyIndicesThisTurn.Clear();
+            currentStageEnemies = null;
+            selectedStageEncounters = null;
+            ClearPlayerCombatBuffs();
+            RefreshEnemyVisual();
             settingsOpen = false;
             abandonConfirmationVisible = false;
             if (canvasRunEndRoot != null) canvasRunEndRoot.SetActive(false);
@@ -541,6 +550,7 @@ namespace CardOpen.Prototype
             completedPacks = 0;
             currentGoalIndex = 0;
             currentStageChapter = 1;
+            UpdateChapterBackground();
             completedStageCount = 0;
             pendingBossChapterTransition = false;
             playerHealth = PlayerMaximumHealth;
@@ -700,7 +710,7 @@ namespace CardOpen.Prototype
             {
                 EnemyVisual visual = enemyVisuals[i];
                 if (visual == null) continue;
-                bool visible = i < visibleCount && enemies[i] != null && !enemies[i].IsDefeated && !stageSelectionVisible;
+                bool visible = i < visibleCount && enemies[i] != null && !enemies[i].IsDefeated && !stageSelectionVisible && phase != RevealPhase.GameOver && phase != RevealPhase.RunCleared;
                 visual.gameObject.SetActive(visible);
                 if (!visible) continue;
                 global::EnemyDefinition definition = enemies[i].Definition;

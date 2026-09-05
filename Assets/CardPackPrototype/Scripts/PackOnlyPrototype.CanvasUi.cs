@@ -1012,6 +1012,9 @@ namespace CardOpen.Prototype
                 for (int i = 0; i < resultTexts.Length; i++) resultTexts[i].color = Color.black;
             }
             if (!visible) return;
+            RefreshEnemyVisual();
+            for (int i = 0; i < enemyBuffListVisuals.Count; i++)
+                if (enemyBuffListVisuals[i] != null) enemyBuffListVisuals[i].gameObject.SetActive(false);
             bool cleared = phase == RevealPhase.RunCleared;
             bool defeated = !sharedResultMode && playerHealth <= 0;
             canvasRunEndTitle.text = cleared ? Ui("런 클리어!", "RUN CLEARED!") : Ui("도전 실패", "CHALLENGE FAILED");

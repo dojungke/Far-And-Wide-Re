@@ -1156,7 +1156,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
                 CombatBuffListVisual visual = enemyActionBuffListVisuals[i];
                 EnemyState enemy = i < enemies.Count ? enemies[i] : null;
                 enemyActionBuffEntries.Clear();
-                if (!stageSelectionVisible && enemy != null && !enemy.IsDefeated)
+                if (!stageSelectionVisible && phase != RevealPhase.GameOver && phase != RevealPhase.RunCleared && enemy != null && !enemy.IsDefeated)
                     CollectEnemyActionBuffEntries(enemy, enemyActionBuffEntries);
                 visual.gameObject.SetActive(enemyActionBuffEntries.Count > 0);
                 if (enemyActionBuffEntries.Count == 0) continue;
@@ -1216,7 +1216,7 @@ bool canEndTurn = startingHandVisible && phase == RevealPhase.CardFront && playe
                 CombatBuffListVisual visual = enemyBuffListVisuals[i];
                 EnemyState enemy = i < enemies.Count ? enemies[i] : null;
                 enemyBuffEntries.Clear();
-                if (!stageSelectionVisible && enemy != null && !enemy.IsDefeated)
+                if (!stageSelectionVisible && phase != RevealPhase.GameOver && phase != RevealPhase.RunCleared && enemy != null && !enemy.IsDefeated)
                 {
                     if (enemy.Burn > 0) enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Burn"), enemy.Burn));
                     if (enemy.Wood > 0) enemyBuffEntries.Add(new CombatBuffListVisual.Entry(GetCombatBuffDefinition("Wood"), enemy.Wood));
